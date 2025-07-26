@@ -95,22 +95,22 @@ List<SettingsModel> get playSettings => [
     title: '自动启用字幕',
     leading: const Icon(Icons.closed_caption_outlined),
     getSubtitle: () =>
-        '当前选择偏好：${SubtitlePrefTypeExt.fromCode(Pref.subtitlePreference)!.description}',
+        '当前选择偏好：${SubtitlePrefType.values[Pref.subtitlePreferenceV2].desc}',
     onTap: (setState) async {
-      String? result = await showDialog(
+      int? result = await showDialog(
         context: Get.context!,
         builder: (context) {
-          return SelectDialog<String>(
+          return SelectDialog<int>(
             title: '字幕选择偏好',
-            value: Pref.subtitlePreference,
+            value: Pref.subtitlePreferenceV2,
             values: SubtitlePrefType.values
-                .map((e) => (e.code, e.description))
+                .map((e) => (e.index, e.desc))
                 .toList(),
           );
         },
       );
       if (result != null) {
-        await GStorage.setting.put(SettingBoxKey.subtitlePreference, result);
+        await GStorage.setting.put(SettingBoxKey.subtitlePreferenceV2, result);
         setState();
       }
     },
@@ -164,7 +164,7 @@ List<SettingsModel> get playSettings => [
     setKey: SettingBoxKey.continuePlayInBackground,
     defaultVal: false,
   ),
-  if (Platform.isAndroid)
+  if (Platform.isAndroid) ...[
     SettingsModel(
       settingsType: SettingsType.sw1tch,
       title: '后台画中画',
@@ -178,7 +178,6 @@ List<SettingsModel> get playSettings => [
         }
       },
     ),
-  if (Platform.isAndroid)
     SettingsModel(
       settingsType: SettingsType.sw1tch,
       title: '画中画不加载弹幕',
@@ -187,6 +186,7 @@ List<SettingsModel> get playSettings => [
       setKey: SettingBoxKey.pipNoDanmaku,
       defaultVal: false,
     ),
+  ],
   SettingsModel(
     settingsType: SettingsType.sw1tch,
     title: '全屏手势反向',

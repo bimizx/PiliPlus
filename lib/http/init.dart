@@ -258,7 +258,7 @@ class Request {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await dio.download(
+      return await dio.download(
         urlPath,
         savePath,
         cancelToken: cancelToken,
@@ -268,7 +268,6 @@ class Request {
         // },
       );
       // if (kDebugMode) debugPrint('downloadFile success: ${response.data}');
-      return response;
     } on DioException catch (e) {
       // if (kDebugMode) debugPrint('downloadFile error: $e');
       return Response(
@@ -289,15 +288,6 @@ class Request {
    */
   void cancelRequests(CancelToken token) {
     token.cancel("cancelled");
-  }
-
-  static String headerUa({String type = 'mob'}) {
-    return switch (type) {
-      'mob' =>
-        'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Mobile Safari/537.36',
-      _ =>
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
-    };
   }
 
   static String responseDecoder(

@@ -11,8 +11,8 @@ import 'package:PiliPlus/http/member.dart';
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/http/video.dart';
-import 'package:PiliPlus/member_card_info/data.dart';
 import 'package:PiliPlus/models_new/fav/fav_folder/data.dart';
+import 'package:PiliPlus/models_new/member_card_info/data.dart';
 import 'package:PiliPlus/models_new/triple/ugc_triple.dart';
 import 'package:PiliPlus/models_new/video/video_ai_conclusion/data.dart';
 import 'package:PiliPlus/models_new/video/video_ai_conclusion/model_result.dart';
@@ -358,9 +358,9 @@ class VideoIntroController extends CommonIntroController with ReloadMixin {
 
   // （取消）收藏
   @override
-  Future<void> actionFavVideo({String type = 'choose'}) async {
+  Future<void> actionFavVideo({bool isQuick = false}) async {
     // 收藏至默认文件夹
-    if (type == 'default') {
+    if (isQuick) {
       SmartDialog.showLoading(msg: '请求中');
       queryVideoInFolder().then((res) async {
         if (res['status']) {

@@ -99,7 +99,8 @@ List<SettingsModel> get extraSettings => [
                     SettingBoxKey.dynamicPeriod,
                     dynamicPeriod,
                   );
-                  Get.find<MainController>().dynamicPeriod = dynamicPeriod;
+                  Get.find<MainController>().dynamicPeriod =
+                      dynamicPeriod * 60 * 1000;
                 },
                 child: const Text('确定'),
               ),
@@ -701,13 +702,6 @@ List<SettingsModel> get extraSettings => [
     onChanged: (value) {
       CommonSlidePageState.slideDismissReplyPage = value;
     },
-  ),
-  SettingsModel(
-    settingsType: SettingsType.sw1tch,
-    title: '全屏展示点赞/投币/收藏等操作按钮',
-    leading: const Icon(MdiIcons.dotsHorizontalCircleOutline),
-    setKey: SettingBoxKey.showFSActionItem,
-    defaultVal: true,
   ),
   SettingsModel(
     settingsType: SettingsType.sw1tch,

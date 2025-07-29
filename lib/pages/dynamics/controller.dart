@@ -67,8 +67,8 @@ class DynamicsController extends GetxController
     var res = await FollowHttp.followings(
       vmid: accountService.mid,
       pn: allFollowedUpsPage,
-      ps: 50,
       orderType: 'attention',
+      ps: 50,
     );
     if (res.isSuccess) {
       upData.value.upList ??= <UpItem>[];
@@ -108,8 +108,8 @@ class DynamicsController extends GetxController
       final f2 = FollowHttp.followings(
         vmid: accountService.mid,
         pn: allFollowedUpsPage,
-        ps: 50,
         orderType: 'attention',
+        ps: 50,
       );
       final res0 = await f1;
       if (!res0.isSuccess) {

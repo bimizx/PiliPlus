@@ -10,7 +10,6 @@ import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -104,8 +103,7 @@ class _HomePageState extends State<HomePage>
                         child: Material(
                           type: MaterialType.transparency,
                           child: InkWell(
-                            onTap: () =>
-                                _homeController.showUserInfoDialog(context),
+                            onTap: _mainController.toMinePage,
                             splashColor: theme.colorScheme.primaryContainer
                                 .withValues(alpha: 0.3),
                             customBorder: const CircleBorder(),
@@ -141,8 +139,7 @@ class _HomePageState extends State<HomePage>
                   )
                 : defaultUser(
                     theme: theme,
-                    onPressed: () =>
-                        _homeController.showUserInfoDialog(context),
+                    onPressed: _mainController.toMinePage,
                   ),
           ),
         ),
@@ -151,14 +148,11 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget customAppBar(ThemeData theme) {
+    if (!_homeController.hideSearchBar) {
+      return searchBarAndUser(theme);
+    }
     return StreamBuilder(
-      stream: _homeController.hideSearchBar
-          ? _mainController.navSearchStreamDebounce
-                ? _homeController.searchBarStream?.stream.distinct().throttle(
-                    const Duration(milliseconds: 500),
-                  )
-                : _homeController.searchBarStream?.stream.distinct()
-          : null,
+      stream: _homeController.searchBarStream?.stream.distinct(),
       initialData: true,
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         return AnimatedOpacity(
@@ -235,9 +229,9 @@ Widget defaultUser({
       tooltip: '默认用户头像',
       style: ButtonStyle(
         padding: WidgetStateProperty.all(EdgeInsets.zero),
-        backgroundColor: WidgetStateProperty.resolveWith((states) {
-          return theme.colorScheme.onInverseSurface;
-        }),
+        backgroundColor: WidgetStatePropertyAll(
+          theme.colorScheme.onInverseSurface,
+        ),
       ),
       onPressed: onPressed,
       icon: Icon(

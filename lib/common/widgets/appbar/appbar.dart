@@ -1,10 +1,10 @@
-import 'package:PiliPlus/pages/common/multi_select_controller.dart';
+import 'package:PiliPlus/pages/common/multi_select/base.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class MultiSelectAppBarWidget extends StatelessWidget
     implements PreferredSizeWidget {
-  final MultiSelectMixin ctr;
+  final MultiSelectBase ctr;
   final bool? visible;
   final AppBar child;
   final List<Widget>? children;
@@ -19,8 +19,7 @@ class MultiSelectAppBarWidget extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    final visible = this.visible ?? ctr.enableMultiSelect.value;
-    if (visible) {
+    if (visible ?? ctr.enableMultiSelect.value) {
       return AppBar(
         bottom: child.bottom,
         leading: IconButton(
@@ -42,7 +41,7 @@ class MultiSelectAppBarWidget extends StatelessWidget
             style: TextButton.styleFrom(
               visualDensity: VisualDensity.compact,
             ),
-            onPressed: ctr.onConfirm,
+            onPressed: ctr.onRemove,
             child: Text(
               '移除',
               style: TextStyle(color: Get.theme.colorScheme.error),

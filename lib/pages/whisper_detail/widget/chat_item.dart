@@ -13,7 +13,6 @@ import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/date_util.dart';
 import 'package:PiliPlus/utils/duration_util.dart';
-import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/image_util.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
@@ -177,7 +176,7 @@ class ChatItem extends StatelessWidget {
         case MsgType.EN_MSG_TYPE_TEXT:
           return msgTypeText_1(theme, content: content, textColor: textColor);
         case MsgType.EN_MSG_TYPE_PIC:
-          return msgTypePic_2(context, content);
+          return msgTypePic_2(content);
         case MsgType.EN_MSG_TYPE_SHARE_V2:
           return msgTypeShareV2_7(content, textColor);
         case MsgType.EN_MSG_TYPE_VIDEO_CARD:
@@ -203,7 +202,13 @@ class ChatItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
-            onTap: () => Get.toNamed('/liveRoom?roomid=${content['sourceID']}'),
+            onTap: () {
+              var roomId = content['sourceID'];
+              if (roomId is String) {
+                roomId = int.parse(roomId);
+              }
+              PageUtils.toLiveRoom(roomId);
+            },
             child: NetworkImgLayer(
               width: 220,
               height: 220 * 9 / 16,
@@ -582,10 +587,10 @@ class ChatItem extends StatelessWidget {
     );
   }
 
-  Widget msgTypePic_2(BuildContext context, content) {
+  Widget msgTypePic_2(content) {
     final url = content['url'];
     return GestureDetector(
-      onTap: () => context.imageView(imgList: [SourceModel(url: url)]),
+      onTap: () => PageUtils.imageView(imgList: [SourceModel(url: url)]),
       child: Hero(
         tag: url,
         child: NetworkImgLayer(

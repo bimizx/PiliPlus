@@ -10,6 +10,7 @@ import 'package:PiliPlus/http/member.dart';
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/http/video.dart';
+import 'package:PiliPlus/models/common/video/source_type.dart';
 import 'package:PiliPlus/models_new/member_card_info/data.dart';
 import 'package:PiliPlus/models_new/triple/ugc_triple.dart';
 import 'package:PiliPlus/models_new/video/video_ai_conclusion/data.dart';
@@ -30,6 +31,7 @@ import 'package:PiliPlus/pages/video/related/controller.dart';
 import 'package:PiliPlus/pages/video/reply/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/services/service_locator.dart';
+import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/global_data.dart';
@@ -41,7 +43,7 @@ import 'package:PiliPlus/utils/utils.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide ContextExtensionss;
 
 class UgcIntroController extends CommonIntroController with ReloadMixin {
   late ExpandableController expandableCtr;
@@ -72,8 +74,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     );
     if (!alwaysExapndIntroPanel && Pref.exapndIntroPanelH) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Get.context!.orientation == Orientation.landscape &&
-            expandableCtr.expanded == false) {
+        if (!expandableCtr.expanded && Get.context!.isLandscape) {
           expandableCtr.toggle();
         }
       });
@@ -513,7 +514,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
           } catch (_) {}
         }
 
-        hasLater.value = false;
+        hasLater.value = videoDetailCtr.sourceType == SourceType.watchLater;
         this.bvid = bvid;
         queryVideoIntro();
       }

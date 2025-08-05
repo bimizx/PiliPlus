@@ -6,22 +6,24 @@ mixin MultiSelectData {
   bool? checked;
 }
 
-mixin MultiSelectMixin<T> {
-  late final RxBool enableMultiSelect = false.obs;
-  late final allSelected = false.obs;
+abstract class MultiSelectBase<T> {
+  RxBool get enableMultiSelect;
+  RxBool get allSelected;
 
   int get checkedCount;
 
   void onSelect(T item, [bool disableSelect = true]);
   void handleSelect([bool checked = false, bool disableSelect = true]);
-  void onConfirm();
+  void onRemove();
 }
 
-abstract class MultiSelectController<R, T extends MultiSelectData>
-    extends CommonListController<R, T>
-    with MultiSelectMixin<T>, CommonMultiSelectMixin, DeleteItemMixin {}
+mixin CommonMultiSelectMixin<T extends MultiSelectData>
+    implements MultiSelectBase<T> {
+  @override
+  late final RxBool enableMultiSelect = false.obs;
+  @override
+  late final allSelected = false.obs;
 
-mixin CommonMultiSelectMixin<T extends MultiSelectData> on MultiSelectMixin<T> {
   Rx<LoadingState<List<T>?>> get loadingState;
   late final RxInt rxCount = 0.obs;
 
@@ -70,18 +72,22 @@ mixin CommonMultiSelectMixin<T extends MultiSelectData> on MultiSelectMixin<T> {
 
 mixin DeleteItemMixin<R, T extends MultiSelectData>
     on CommonListController<R, T>, CommonMultiSelectMixin<T> {
-  Future<void> afterDelete(Set<T> result) async {
-    // TODO: result require hash
-    final remainList = loadingState.value.data!;
-    if (result.length == 1) {
-      remainList.remove(result.single);
+  Future<void> afterDelete(Iterable<T> removeList) async {
+    final list = loadingState.value.data!;
+    if (removeList.length == list.length) {
+      list.clear();
+    } else if (removeList.length == 1) {
+      list.remove(removeList.single);
     } else {
-      remainList.removeWhere(result.contains);
+      list.removeWhere(removeList.contains);
     }
-    if (remainList.isNotEmpty) {
+    if (list.isNotEmpty) {
       loadingState.refresh();
     } else if (!isEnd) {
       onReload();
+    } else {
+      // empty && end
+      loadingState.value = const Success(null);
     }
     if (enableMultiSelect.value) {
       rxCount.value = 0;

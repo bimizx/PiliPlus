@@ -2,15 +2,15 @@ import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/video_progress_indicator.dart';
+import 'package:PiliPlus/common/widgets/select_mask.dart';
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/models/common/history_business_type.dart';
 import 'package:PiliPlus/models_new/history/list.dart';
-import 'package:PiliPlus/pages/common/multi_select_controller.dart';
+import 'package:PiliPlus/pages/common/multi_select/base.dart';
 import 'package:PiliPlus/utils/date_util.dart';
 import 'package:PiliPlus/utils/duration_util.dart';
-import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +20,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class HistoryItem extends StatelessWidget {
   final HistoryItemModel item;
-  final MultiSelectMixin ctr;
+  final MultiSelectBase ctr;
   final void Function(int kid, String business) onDelete;
 
   const HistoryItem({
@@ -36,71 +36,64 @@ class HistoryItem extends StatelessWidget {
     final hasDuration = item.duration != null && item.duration != 0;
     int aid = item.history.oid!;
     String bvid = item.history.bvid ?? IdUtils.av2bv(aid);
+    final business = item.history.business;
+    final enableMultiSelect = ctr.enableMultiSelect.value;
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
-        onTap: () async {
-          if (ctr.enableMultiSelect.value) {
-            ctr.onSelect(item);
-            return;
-          }
-          if (item.history.business?.contains('article') == true) {
-            PageUtils.toDupNamed(
-              '/articlePage',
-              parameters: {
-                'id': item.history.business == 'article-list'
-                    ? '${item.history.cid}'
-                    : '${item.history.oid}',
-                'type': 'read',
+        onTap: enableMultiSelect
+            ? () => ctr.onSelect(item)
+            : () async {
+                if (business?.contains('article') == true) {
+                  PageUtils.toDupNamed(
+                    '/articlePage',
+                    parameters: {
+                      'id': business == 'article-list'
+                          ? '${item.history.cid}'
+                          : '${item.history.oid}',
+                      'type': 'read',
+                    },
+                  );
+                } else if (business == 'live') {
+                  if (item.liveStatus == 1) {
+                    PageUtils.toLiveRoom(item.history.oid);
+                  } else {
+                    SmartDialog.showToast('直播未开播');
+                  }
+                } else if (business == 'pgc') {
+                  PageUtils.viewPgc(epId: item.history.epid);
+                } else if (business == 'cheese') {
+                  if (item.uri?.isNotEmpty == true) {
+                    PageUtils.viewPgcFromUri(
+                      item.uri!,
+                      isPgc: false,
+                      aid: item.history.oid,
+                    );
+                  }
+                } else {
+                  int? cid =
+                      item.history.cid ??
+                      await SearchHttp.ab2c(
+                        aid: aid,
+                        bvid: bvid,
+                        part: item.history.page,
+                      );
+                  if (cid != null) {
+                    PageUtils.toVideoPage(
+                      aid: aid,
+                      bvid: bvid,
+                      cid: cid,
+                      cover: item.cover,
+                      title: item.title,
+                    );
+                  }
+                }
               },
-            );
-          } else if (item.history.business == 'live') {
-            if (item.liveStatus == 1) {
-              Get.toNamed('/liveRoom?roomid=${item.history.oid}');
-            } else {
-              SmartDialog.showToast('直播未开播');
-            }
-          } else if (item.history.business == 'pgc') {
-            PageUtils.viewPgc(epId: item.history.epid);
-          } else if (item.history.business == 'cheese') {
-            if (item.uri?.isNotEmpty == true) {
-              PageUtils.viewPgcFromUri(
-                item.uri!,
-                isPgc: false,
-                aid: item.history.oid,
-              );
-            }
-          } else {
-            int? cid =
-                item.history.cid ??
-                await SearchHttp.ab2c(
-                  aid: aid,
-                  bvid: bvid,
-                  part: item.history.page,
-                );
-            if (cid != null) {
-              PageUtils.toVideoPage(
-                aid: aid,
-                bvid: bvid,
-                cid: cid,
-                cover: item.cover,
-                title: item.title,
-              );
-            }
-          }
-        },
-        onLongPress: () {
-          if (!ctr.enableMultiSelect.value) {
-            ctr.enableMultiSelect.value = true;
-            ctr.onSelect(item);
-          }
-          return;
-          // imageSaveDialog(
-          //   title: item.title,
-          //   cover: item.cover,
-          //   bvid: bvid,
-          // );
-        },
+        onLongPress: enableMultiSelect
+            ? null
+            : () => ctr
+                ..enableMultiSelect.value = true
+                ..onSelect(item),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -144,8 +137,7 @@ class HistoryItem extends StatelessWidget {
                                 top: 6.0,
                                 right: 6.0,
                                 type:
-                                    item.history.business ==
-                                            HistoryBusinessType.live.type &&
+                                    business == HistoryBusinessType.live.type &&
                                         item.liveStatus != 1
                                     ? PBadgeType.gray
                                     : PBadgeType.primary,
@@ -164,49 +156,7 @@ class HistoryItem extends StatelessWidget {
                                 ),
                               ),
                             Positioned.fill(
-                              child: AnimatedOpacity(
-                                opacity: item.checked == true ? 1 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: Container(
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    borderRadius: StyleString.mdRadius,
-                                    color: Colors.black.withValues(alpha: 0.6),
-                                  ),
-                                  child: SizedBox(
-                                    width: 34,
-                                    height: 34,
-                                    child: AnimatedScale(
-                                      scale: item.checked == true ? 1 : 0,
-                                      duration: const Duration(
-                                        milliseconds: 250,
-                                      ),
-                                      curve: Curves.easeInOut,
-                                      child: IconButton(
-                                        tooltip: '取消选择',
-                                        style: ButtonStyle(
-                                          padding: WidgetStateProperty.all(
-                                            EdgeInsets.zero,
-                                          ),
-                                          backgroundColor:
-                                              WidgetStatePropertyAll(
-                                                theme.colorScheme.surface
-                                                    .withValues(alpha: 0.8),
-                                              ),
-                                        ),
-                                        onPressed: () {
-                                          feedBack();
-                                          ctr.onSelect(item);
-                                        },
-                                        icon: Icon(
-                                          Icons.done_all_outlined,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              child: selectMask(theme, item.checked == true),
                             ),
                           ],
                         );
@@ -255,11 +205,11 @@ class HistoryItem extends StatelessWidget {
                               ],
                             ),
                           ),
-                        if (item.history.business != 'pgc' &&
+                        if (business != 'pgc' &&
                             item.badge != '番剧' &&
                             item.tagName?.contains('动画') != true &&
-                            item.history.business != 'live' &&
-                            item.history.business?.contains('article') != true)
+                            business != 'live' &&
+                            business?.contains('article') != true)
                           PopupMenuItem<String>(
                             onTap: () async {
                               var res = await UserHttp.toViewLater(
@@ -277,8 +227,7 @@ class HistoryItem extends StatelessWidget {
                             ),
                           ),
                         PopupMenuItem<String>(
-                          onTap: () =>
-                              onDelete(item.kid!, item.history.business!),
+                          onTap: () => onDelete(item.kid!, business!),
                           height: 35,
                           child: const Row(
                             children: [

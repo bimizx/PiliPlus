@@ -79,7 +79,7 @@ class _FavSortPageState extends State<FavSortPage> {
               }
               var res = await FavHttp.sortFav(
                 mediaId: _favDetailController.mediaId,
-                sort: sort,
+                sort: sort.join(','),
               );
               if (res['status']) {
                 SmartDialog.showToast('排序完成');
@@ -136,10 +136,7 @@ class _FavSortPageState extends State<FavSortPage> {
         return SizedBox(
           key: Key(item.id.toString()),
           height: 98,
-          child: FavVideoCardH(
-            isSort: true,
-            item: item,
-          ),
+          child: FavVideoCardH(item: item),
         );
       },
     );

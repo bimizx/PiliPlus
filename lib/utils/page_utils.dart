@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:PiliPlus/common/widgets/interactiveviewer_gallery/hero_dialog_route.dart';
 import 'package:PiliPlus/common/widgets/interactiveviewer_gallery/interactiveviewer_gallery.dart';
 import 'package:PiliPlus/grpc/im.dart';
 import 'package:PiliPlus/http/dynamics.dart';
@@ -14,8 +15,10 @@ import 'package:PiliPlus/pages/contact/view.dart';
 import 'package:PiliPlus/pages/fav_panel/view.dart';
 import 'package:PiliPlus/pages/share/view.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/widgets/menu_row.dart';
+import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/services/shutdown_timer_service.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
+import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/global_data.dart';
@@ -28,10 +31,30 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:url_launcher/url_launcher.dart';
 
 class PageUtils {
+  static Future<void> imageView({
+    int initialPage = 0,
+    required List<SourceModel> imgList,
+    ValueChanged<int>? onDismissed,
+    int? quality,
+  }) {
+    bool isMemberPage = Get.currentRoute.startsWith('/member?');
+    return Navigator.of(Get.context!).push(
+      HeroDialogRoute(
+        builder: (context) => InteractiveviewerGallery(
+          sources: imgList,
+          initIndex: initialPage,
+          onDismissed: onDismissed,
+          setStatusBar: !isMemberPage,
+          quality: quality ?? GlobalData().imgQuality,
+        ),
+      ),
+    );
+  }
+
   static Future<void> pmShare(
     BuildContext context, {
     required Map content,
@@ -444,7 +467,7 @@ class PageUtils {
       case 'DYNAMIC_TYPE_LIVE_RCMD':
         DynamicLiveModel liveRcmd =
             item.modules.moduleDynamic!.major!.liveRcmd!;
-        toDupNamed('/liveRoom?roomid=${liveRcmd.roomId}');
+        toLiveRoom(liveRcmd.roomId);
         break;
 
       /// 合集查看
@@ -624,7 +647,7 @@ class PageUtils {
       barrierLabel: '',
       barrierDismissible: true,
       pageBuilder: (buildContext, animation, secondaryAnimation) {
-        return MediaQuery.orientationOf(Get.context!) == Orientation.portrait
+        return Get.context!.isPortrait
             ? SafeArea(
                 child: Column(
                   children: [
@@ -646,8 +669,7 @@ class PageUtils {
       },
       transitionDuration: const Duration(milliseconds: 350),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        Offset begin =
-            MediaQuery.orientationOf(Get.context!) == Orientation.portrait
+        Offset begin = Get.context!.isPortrait
             ? const Offset(0.0, 1.0)
             : const Offset(1.0, 0.0);
         var tween = Tween(
@@ -661,6 +683,24 @@ class PageUtils {
       },
       routeSettings: RouteSettings(arguments: Get.arguments),
     );
+  }
+
+  static void toLiveRoom(
+    int? roomId, {
+    bool off = false,
+  }) {
+    if (roomId == null) {
+      return;
+    }
+    if (PlPlayerController.instanceExists()) {
+      SmartDialog.showToast('unsupported');
+      return;
+    }
+    if (off) {
+      Get.offNamed('/liveRoom', arguments: roomId);
+    } else {
+      Get.toNamed('/liveRoom', arguments: roomId);
+    }
   }
 
   static void toVideoPage({
@@ -679,6 +719,10 @@ class PageUtils {
     bool preventDuplicates = true,
     bool off = false,
   }) {
+    if (PlPlayerController.instance?.isLive == true) {
+      SmartDialog.showToast('Living');
+      return;
+    }
     final arguments = {
       'aid': aid ?? IdUtils.bv2av(bvid!),
       'bvid': bvid ?? IdUtils.av2bv(aid!),
@@ -698,14 +742,14 @@ class PageUtils {
         '/videoV',
         arguments: arguments,
         id: id,
-        preventDuplicates: preventDuplicates,
+        preventDuplicates: false,
       );
     } else {
       Get.toNamed(
         '/videoV',
         arguments: arguments,
         id: id,
-        preventDuplicates: preventDuplicates,
+        preventDuplicates: false,
       );
     }
   }

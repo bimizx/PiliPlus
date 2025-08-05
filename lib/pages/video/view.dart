@@ -43,6 +43,7 @@ import 'package:PiliPlus/plugin/pl_player/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/services/shutdown_timer_service.dart';
 import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/image_util.dart';
 import 'package:PiliPlus/utils/num_util.dart';
@@ -60,7 +61,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:screen_brightness/screen_brightness.dart';
 
 class VideoDetailPageV extends StatefulWidget {
@@ -121,6 +122,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
   final GlobalKey relatedVideoPanelKey = GlobalKey();
   final GlobalKey videoPlayerKey = GlobalKey();
+  final GlobalKey playerKey = GlobalKey();
   final GlobalKey videoReplyPanelKey = GlobalKey();
   late final GlobalKey ugcPanelKey = GlobalKey();
   late final GlobalKey pgcPanelKey = GlobalKey();
@@ -188,24 +190,26 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      introController.startTimer();
-      videoDetailController.plPlayerController.showDanmaku = true;
+      if (!videoDetailController.plPlayerController.showDanmaku) {
+        introController.startTimer();
+        videoDetailController.plPlayerController.showDanmaku = true;
 
-      // 修复从后台恢复时全屏状态下屏幕方向错误的问题
-      if (isFullScreen && Platform.isIOS) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          // 根据视频方向重新设置屏幕方向
-          final isVertical = videoDetailController.isVertical.value;
-          final mode = plPlayerController?.mode;
+        // 修复从后台恢复时全屏状态下屏幕方向错误的问题
+        if (isFullScreen && Platform.isIOS) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // 根据视频方向重新设置屏幕方向
+            final isVertical = videoDetailController.isVertical.value;
+            final mode = plPlayerController?.mode;
 
-          late final size = Get.size;
-          if (!(mode == FullScreenMode.vertical ||
-              (mode == FullScreenMode.auto && isVertical) ||
-              (mode == FullScreenMode.ratio &&
-                  (isVertical || size.height / size.width < 1.25)))) {
-            landScape();
-          }
-        });
+            late final size = Get.size;
+            if (!(mode == FullScreenMode.vertical ||
+                (mode == FullScreenMode.auto && isVertical) ||
+                (mode == FullScreenMode.ratio &&
+                    (isVertical || size.height / size.width < 1.25)))) {
+              landScape();
+            }
+          });
+        }
       }
     } else if (state == AppLifecycleState.paused) {
       introController.canelTimer();
@@ -317,9 +321,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       return;
     }
     plPlayerController = videoDetailController.plPlayerController;
-    videoDetailController
-      ..isShowCover.value = false
-      ..autoPlay.value = true;
+    videoDetailController.autoPlay.value = true;
     if (videoDetailController.plPlayerController.preInitPlayer) {
       await plPlayerController!.play();
     } else {
@@ -452,9 +454,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       }
     }
     super.didPopNext();
-    final isShowCover = videoDetailController.isShowCover.value;
-    videoDetailController.autoPlay.value = !isShowCover;
-    if (!isShowCover) {
+    if (videoDetailController.autoPlay.value) {
       await videoDetailController.playerInit(
         autoplay: videoDetailController.playerStatus == PlayerStatus.playing,
       );
@@ -538,8 +538,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   }
 
   Widget get childWhenDisabled {
-    final isPortrait =
-        MediaQuery.orientationOf(context) == Orientation.portrait;
+    final isPortrait = context.isPortrait;
     final useSafeArea = !removeSafeArea && isPortrait && isFullScreen;
     final size = MediaQuery.sizeOf(context);
     final double width = size.width;
@@ -607,9 +606,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           controller: videoDetailController.scrollCtr,
           onlyOneScrollInBody: true,
           pinnedHeaderSliverHeightBuilder: () {
-            double pinnedHeight =
-                isFullScreen ||
-                    MediaQuery.orientationOf(context) == Orientation.landscape
+            double pinnedHeight = isFullScreen || context.isLandscape
                 ? MediaQuery.sizeOf(context).height
                 : videoDetailController.isExpanding ||
                       videoDetailController.isCollapsing
@@ -1212,41 +1209,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     ),
   );
 
-  Widget get childWhenEnabled => Obx(
-    () => !videoDetailController.autoPlay.value
-        ? const SizedBox.shrink()
-        : PLVideoPlayer(
-            key: Key(heroTag),
-            plPlayerController: plPlayerController!,
-            videoDetailController: videoDetailController,
-            ugcIntroController: videoDetailController.isUgc
-                ? ugcIntroController
-                : null,
-            pgcIntroController: videoDetailController.isUgc
-                ? null
-                : pgcIntroController,
-            headerControl: HeaderControl(
-              controller: plPlayerController!,
-              videoDetailCtr: videoDetailController,
-              heroTag: heroTag,
-            ),
-            danmuWidget: pipNoDanmaku
-                ? null
-                : Obx(
-                    () => PlDanmaku(
-                      key: Key(videoDetailController.cid.value.toString()),
-                      isPipMode: true,
-                      cid: videoDetailController.cid.value,
-                      playerController: plPlayerController!,
-                    ),
-                  ),
-            showEpisodes: showEpisodes,
-            showViewPoints: showViewPoints,
-          ),
-  );
-
   Widget get manualPlayerWidget => Obx(() {
-    if (videoDetailController.isShowCover.value) {
+    if (!videoDetailController.autoPlay.value) {
       return Stack(
         clipBehavior: Clip.none,
         children: [
@@ -1387,15 +1351,15 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     return const SizedBox.shrink();
   });
 
-  Widget get plPlayer => Obx(
+  Widget plPlayer([bool isPipMode = false]) => Obx(
     key: videoPlayerKey,
-    () => videoDetailController.videoState.value is! Success
-        ? const SizedBox.shrink()
-        : !videoDetailController.autoPlay.value ||
-              plPlayerController?.videoController == null
+    () =>
+        videoDetailController.videoState.value is! Success ||
+            !videoDetailController.autoPlay.value ||
+            plPlayerController?.videoController == null
         ? const SizedBox.shrink()
         : PLVideoPlayer(
-            key: Key(heroTag),
+            key: playerKey,
             plPlayerController: plPlayerController!,
             videoDetailController: videoDetailController,
             ugcIntroController: videoDetailController.isUgc
@@ -1410,13 +1374,17 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               videoDetailCtr: videoDetailController,
               heroTag: heroTag,
             ),
-            danmuWidget: Obx(
-              () => PlDanmaku(
-                key: Key(videoDetailController.cid.value.toString()),
-                cid: videoDetailController.cid.value,
-                playerController: plPlayerController!,
-              ),
-            ),
+            danmuWidget: isPipMode && pipNoDanmaku
+                ? null
+                : Obx(
+                    () => PlDanmaku(
+                      key: ValueKey(videoDetailController.cid.value),
+                      isPipMode: isPipMode,
+                      cid: videoDetailController.cid.value,
+                      playerController: plPlayerController!,
+                      isFullScreen: plPlayerController!.isFullScreen.value,
+                    ),
+                  ),
             showEpisodes: showEpisodes,
             showViewPoints: showViewPoints,
           ),
@@ -1424,7 +1392,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
   Widget autoChoose(Widget childWhenDisabled) {
     if (Platform.isAndroid) {
-      return Floating().isPipMode ? childWhenEnabled : childWhenDisabled;
+      return Floating().isPipMode ? plPlayer(true) : childWhenDisabled;
     }
     return childWhenDisabled;
   }
@@ -1616,18 +1584,17 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     return PopScope(
       canPop:
           !isFullScreen &&
-          (videoDetailController.horizontalScreen ||
-              MediaQuery.orientationOf(context) == Orientation.portrait),
+          (videoDetailController.horizontalScreen || context.isPortrait),
       onPopInvokedWithResult: _onPopInvokedWithResult,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           const Positioned.fill(child: ColoredBox(color: Colors.black)),
 
-          if (isShowing) plPlayer,
+          if (isShowing) plPlayer(),
 
           Obx(() {
-            if (videoDetailController.isShowCover.value) {
+            if (!videoDetailController.autoPlay.value) {
               return Positioned.fill(
                 child: GestureDetector(
                   onTap: handlePlay,
@@ -1826,9 +1793,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           child: SizedBox(
             height:
                 bottom +
-                (videoDetailController.isPlayAll &&
-                        MediaQuery.orientationOf(context) ==
-                            Orientation.landscape
+                (videoDetailController.isPlayAll && context.isLandscape
                     ? 75
                     : 0),
           ),
@@ -2213,8 +2178,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     if (isFullScreen) {
       plPlayerController!.triggerFullScreen(status: false);
     }
-    if (MediaQuery.orientationOf(context) == Orientation.landscape &&
-        !videoDetailController.horizontalScreen) {
+    if (!videoDetailController.horizontalScreen && context.isLandscape) {
       verticalScreenForTwoSeconds();
     }
   }

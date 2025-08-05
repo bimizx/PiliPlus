@@ -3,10 +3,12 @@ import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/image/image_save.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
+import 'package:PiliPlus/common/widgets/select_mask.dart';
 import 'package:PiliPlus/common/widgets/stat/stat.dart';
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/models/common/stat_type.dart';
 import 'package:PiliPlus/models_new/fav/fav_detail/media.dart';
+import 'package:PiliPlus/pages/fav_detail/controller.dart';
 import 'package:PiliPlus/utils/date_util.dart';
 import 'package:PiliPlus/utils/duration_util.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
@@ -16,55 +18,60 @@ import 'package:get/get.dart';
 // 收藏视频卡片 - 水平布局
 class FavVideoCardH extends StatelessWidget {
   final FavDetailItemModel item;
-  final GestureTapCallback? onTap;
-  final GestureLongPressCallback? onLongPress;
-  final VoidCallback? onDelFav;
-  final VoidCallback? onViewFav;
-  final bool? isSort;
+  final int? index;
+  final BaseFavController? ctr;
 
   const FavVideoCardH({
     super.key,
     required this.item,
-    this.onDelFav,
-    this.onTap,
-    this.onLongPress,
-    this.onViewFav,
-    this.isSort,
-  });
+    this.index,
+    this.ctr,
+  }) : assert(ctr == null || index != null);
+
+  bool get isSort => ctr == null;
 
   @override
   Widget build(BuildContext context) {
+    final isOwner = !isSort && ctr!.isOwner;
+    late final enableMultiSelect = ctr?.enableMultiSelect.value ?? false;
+    final theme = Theme.of(context);
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
-        onTap: isSort == true
+        onTap: isSort
             ? null
-            : onTap ??
-                  () {
-                    if (!const [0, 16].contains(item.attr)) {
-                      Get.toNamed('/member?mid=${item.upper?.mid}');
-                      return;
-                    }
+            : enableMultiSelect
+            ? () => ctr!.onSelect(item)
+            : () {
+                if (!const [0, 16].contains(item.attr)) {
+                  Get.toNamed('/member?mid=${item.upper?.mid}');
+                  return;
+                }
 
-                    // pgc
-                    if (item.type == 24) {
-                      PageUtils.viewPgc(
-                        seasonId: item.ogv!.seasonId,
-                        epId: item.id,
-                      );
-                      return;
-                    }
+                // pgc
+                if (item.type == 24) {
+                  PageUtils.viewPgc(
+                    seasonId: item.ogv!.seasonId,
+                    epId: item.id,
+                  );
+                  return;
+                }
 
-                    onViewFav?.call();
-                  },
-        onLongPress: isSort == true
+                ctr!.onViewFav(item, index);
+              },
+        onLongPress: isSort
             ? null
-            : onLongPress ??
-                  () => imageSaveDialog(
-                    title: item.title,
-                    cover: item.cover,
-                    bvid: item.bvid,
-                  ),
+            : isOwner && !enableMultiSelect
+            ? () {
+                ctr!
+                  ..enableMultiSelect.value = true
+                  ..onSelect(item);
+              }
+            : () => imageSaveDialog(
+                title: item.title,
+                cover: item.cover,
+                bvid: item.bvid,
+              ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: StyleString.safeSpace,
@@ -100,13 +107,20 @@ class FavVideoCardH extends StatelessWidget {
                           bottom: null,
                           left: null,
                         ),
+                        if (!isSort)
+                          Positioned.fill(
+                            child: selectMask(
+                              theme,
+                              item.checked == true,
+                            ),
+                          ),
                       ],
                     );
                   },
                 ),
               ),
               const SizedBox(width: 10),
-              content(context),
+              content(context, theme, isOwner),
             ],
           ),
         ),
@@ -114,8 +128,7 @@ class FavVideoCardH extends StatelessWidget {
     );
   }
 
-  Widget content(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget content(BuildContext context, ThemeData theme, isOwner) {
     return Expanded(
       child: Stack(
         clipBehavior: Clip.none,
@@ -170,7 +183,7 @@ class FavVideoCardH extends StatelessWidget {
                 ),
             ],
           ),
-          if (onDelFav != null)
+          if (isOwner)
             Positioned(
               right: 0,
               bottom: -8,
@@ -197,7 +210,7 @@ class FavVideoCardH extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             Get.back();
-                            onDelFav!();
+                            ctr!.onCancelFav(index!, item.id!, item.type!);
                           },
                           child: const Text('确定取消'),
                         ),

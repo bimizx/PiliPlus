@@ -4,6 +4,7 @@ import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/http/video.dart';
+import 'package:PiliPlus/models/common/video/source_type.dart';
 import 'package:PiliPlus/models_new/fav/fav_folder/data.dart';
 import 'package:PiliPlus/models_new/video/video_detail/data.dart';
 import 'package:PiliPlus/models_new/video/video_detail/stat_detail.dart';
@@ -67,6 +68,7 @@ abstract class CommonIntroController extends GetxController {
     heroTag = args['heroTag'];
     bvid = args['bvid'];
     cid = RxInt(args['cid']);
+    hasLater.value = args['sourceType'] == SourceType.watchLater;
 
     queryVideoIntro();
     startTimer();
@@ -268,7 +270,7 @@ abstract class CommonIntroController extends GetxController {
 
   Future<void> viewLater() async {
     var res = await (hasLater.value
-        ? UserHttp.toViewDel(aids: [IdUtils.bv2av(bvid)])
+        ? UserHttp.toViewDel(aids: IdUtils.bv2av(bvid).toString())
         : await UserHttp.toViewLater(bvid: bvid));
     if (res['status']) hasLater.value = !hasLater.value;
     SmartDialog.showToast(res['msg']);

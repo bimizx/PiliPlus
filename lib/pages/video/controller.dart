@@ -44,6 +44,7 @@ import 'package:PiliPlus/plugin/pl_player/models/data_source.dart';
 import 'package:PiliPlus/plugin/pl_player/models/heart_beat_type.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/duration_util.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
@@ -58,7 +59,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:get/get_navigation/src/dialog/dialog_route.dart';
 import 'package:hive/hive.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -102,8 +103,6 @@ class VideoDetailController extends GetxController
   late VideoDecodeFormatType currentDecodeFormats;
   // 是否开始自动播放 存在多p的情况下，第二p需要为true
   final RxBool autoPlay = true.obs;
-  // 封面图的展示
-  final RxBool isShowCover = true.obs;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final childKey = GlobalKey<ScaffoldState>();
@@ -285,7 +284,6 @@ class VideoDetailController extends GetxController
     );
 
     autoPlay.value = Pref.autoPlayEnable;
-    if (autoPlay.value) isShowCover.value = false;
 
     // 预设的解码格式
     cacheDecode = Pref.defaultDecode;
@@ -381,7 +379,7 @@ class VideoDetailController extends GetxController
             ? (item, index) async {
                 if (sourceType == SourceType.watchLater) {
                   var res = await UserHttp.toViewDel(
-                    aids: [item.aid],
+                    aids: item.aid.toString(),
                   );
                   if (res['status']) {
                     mediaList.removeAt(index);
@@ -425,8 +423,7 @@ class VideoDetailController extends GetxController
   }
 
   bool get horizontalScreen => plPlayerController.horizontalScreen;
-  bool get showVideoSheet =>
-      !horizontalScreen && Get.context!.orientation == Orientation.landscape;
+  bool get showVideoSheet => !horizontalScreen && Get.context!.isLandscape;
 
   int? _lastPos;
   List<PostSegmentModel>? postList;
@@ -732,7 +729,7 @@ class VideoDetailController extends GetxController
                   );
 
                   if (positionSubscription == null &&
-                      !isShowCover.value &&
+                      autoPlay.value &&
                       plPlayerController.videoPlayerController != null) {
                     final currPost =
                         plPlayerController.position.value.inMilliseconds;
@@ -781,7 +778,7 @@ class VideoDetailController extends GetxController
         );
 
         if (positionSubscription == null &&
-            (!isShowCover.value || plPlayerController.preInitPlayer)) {
+            (autoPlay.value || plPlayerController.preInitPlayer)) {
           initSkip();
           plPlayerController.segmentList.value = segmentProgressList!;
         }
@@ -799,7 +796,7 @@ class VideoDetailController extends GetxController
           ?.stream
           .position
           .listen((position) {
-            if (isShowCover.value) {
+            if (!autoPlay.value) {
               return;
             }
             int currentPos = position.inSeconds;
@@ -1000,7 +997,7 @@ class VideoDetailController extends GetxController
 
   /// 更新画质、音质
   void updatePlayer() {
-    isShowCover.value = false;
+    autoPlay.value = true;
     playedTime = plPlayerController.position.value;
     plPlayerController.removeListeners();
     plPlayerController.isBuffering.value = false;
@@ -1209,10 +1206,7 @@ class VideoDetailController extends GetxController
         setVideoHeight();
         currentDecodeFormats = VideoDecodeFormatTypeExt.fromString('avc1')!;
         currentVideoQa = VideoQuality.fromCode(data.quality!);
-        if (autoPlay.value) {
-          isShowCover.value = false;
-          await playerInit();
-        } else if (plPlayerController.preInitPlayer) {
+        if (autoPlay.value || plPlayerController.preInitPlayer) {
           await playerInit();
         }
         isQuerying = false;
@@ -1221,7 +1215,6 @@ class VideoDetailController extends GetxController
       if (data.dash == null) {
         SmartDialog.showToast('视频资源不存在');
         autoPlay.value = false;
-        isShowCover.value = true;
         videoState.value = const Error('视频资源不存在');
         if (plPlayerController.isFullScreen.value) {
           plPlayerController.toggleFullScreen(false);
@@ -1340,15 +1333,11 @@ class VideoDetailController extends GetxController
                 ? Duration.zero
                 : Duration(milliseconds: data.lastPlayTime!));
       }
-      if (autoPlay.value) {
-        isShowCover.value = false;
-        await playerInit();
-      } else if (plPlayerController.preInitPlayer) {
+      if (autoPlay.value || plPlayerController.preInitPlayer) {
         await playerInit();
       }
     } else {
       autoPlay.value = false;
-      isShowCover.value = true;
       videoState.value = Error(result['msg']);
       if (plPlayerController.isFullScreen.value) {
         plPlayerController.toggleFullScreen(false);

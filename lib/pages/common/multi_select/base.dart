@@ -81,13 +81,10 @@ mixin DeleteItemMixin<R, T extends MultiSelectData>
     } else {
       list.removeWhere(removeList.contains);
     }
-    if (list.isNotEmpty) {
+    if (list.isNotEmpty || isEnd) {
       loadingState.refresh();
-    } else if (!isEnd) {
-      onReload();
     } else {
-      // empty && end
-      loadingState.value = const Success(null);
+      onReload();
     }
     if (enableMultiSelect.value) {
       rxCount.value = 0;

@@ -32,4 +32,27 @@ class DurationUtil {
     }
     return duration;
   }
+
+  static String formatDurationBetween(int startMillis, int endMillis) {
+    int diffMillis = endMillis - startMillis;
+    final duration = Duration(milliseconds: diffMillis);
+
+    final inDays = duration.inDays;
+    final daysLeft = inDays % 365;
+    final years = inDays ~/ 365;
+    final months = daysLeft ~/ 30;
+    final days = daysLeft % 30;
+    final hours = duration.inHours % 24;
+    final minutes = duration.inMinutes % 60;
+
+    var format = '';
+
+    if (years > 0) format += '$years年';
+    if (months > 0) format += '$months月';
+    if (days > 0) format += '$days天';
+    if (hours > 0) format += '$hours小时';
+    if (minutes > 0) format += '$minutes分钟';
+
+    return format;
+  }
 }

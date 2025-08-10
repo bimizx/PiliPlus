@@ -54,7 +54,7 @@ class BottomControl extends StatelessWidget {
                 padding: WidgetStateProperty.all(EdgeInsets.zero),
               ),
               onPressed: () {
-                if (liveRoomCtr.accountService.isLogin.value) {
+                if (liveRoomCtr.isLogin) {
                   Get.toNamed(
                     '/liveDmBlockPage',
                     parameters: {
@@ -88,10 +88,12 @@ class BottomControl extends StatelessWidget {
                   onPressed: () {
                     final newVal = !enableShowDanmaku;
                     plPlayerController.enableShowDanmaku.value = newVal;
-                    GStorage.setting.put(
-                      SettingBoxKey.enableShowDanmaku,
-                      newVal,
-                    );
+                    if (!plPlayerController.tempPlayerConf) {
+                      GStorage.setting.put(
+                        SettingBoxKey.enableShowDanmaku,
+                        newVal,
+                      );
+                    }
                   },
                   icon: Icon(
                     size: 18,

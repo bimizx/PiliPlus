@@ -28,7 +28,7 @@ import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/date_util.dart';
 import 'package:PiliPlus/utils/duration_util.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
-import 'package:PiliPlus/utils/storage.dart';
+import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' hide TabBarView;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -385,7 +385,7 @@ class _EpisodePanelState extends CommonSlidePageState<EpisodePanel> {
         child: InkWell(
           onTap: () {
             if (episode.badge == "会员") {
-              UserInfoData? userInfo = GStorage.userInfo.get('userInfoCache');
+              UserInfoData? userInfo = Pref.userInfoCache;
               int vipStatus = userInfo?.vipStatus ?? 0;
               if (vipStatus != 1) {
                 SmartDialog.showToast('需要大会员');
@@ -622,7 +622,7 @@ class _EpisodePanelState extends CommonSlidePageState<EpisodePanel> {
                 _tabController.animateTo(widget.initialTabIndex);
                 await Future.delayed(const Duration(milliseconds: 225));
               }
-              _itemScrollController[currentTabIndex].scrollTo(
+              _itemScrollController[widget.initialTabIndex].scrollTo(
                 index: _currentItemIndex,
                 duration: const Duration(milliseconds: 200),
               );

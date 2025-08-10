@@ -181,7 +181,8 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   }
 
   // 一键三连
-  Future<void> actionOneThree() async {
+  @override
+  Future<void> actionTriple() async {
     feedBack();
     if (!accountService.isLogin.value) {
       SmartDialog.showToast('账号未登录');
@@ -217,6 +218,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   }
 
   // （取消）点赞
+  @override
   Future<void> actionLikeVideo() async {
     if (!accountService.isLogin.value) {
       SmartDialog.showToast('账号未登录');
@@ -266,6 +268,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   }
 
   // 投币
+  @override
   Future<void> actionCoinVideo() async {
     if (!accountService.isLogin.value) {
       SmartDialog.showToast('账号未登录');
@@ -297,6 +300,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   StatDetail? getStat() => videoDetail.value.stat;
 
   // 分享视频
+  @override
   void actionShareVideo(BuildContext context) {
     showDialog(
       context: context,

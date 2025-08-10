@@ -336,6 +336,8 @@ class PlPlayerController {
   late final bool pipNoDanmaku = Pref.pipNoDanmaku;
   late final bool removeSafeArea = Pref.removeSafeArea;
 
+  late final bool tempPlayerConf = Pref.tempPlayerConf;
+
   int? cacheVideoQa;
   late int cacheAudioQa;
   bool enableHeart = true;
@@ -656,7 +658,7 @@ class PlPlayerController {
       type ??= superResolutionType;
     } else {
       superResolutionType = type;
-      if (isAnim) {
+      if (isAnim && !tempPlayerConf) {
         GStorage.setting.put(SettingBoxKey.superResolutionType, type);
       }
     }
@@ -814,15 +816,17 @@ class PlPlayerController {
       SmartDialog.showToast('视频源为空，请重新进入本页面');
       return false;
     }
-    if (dataSource.audioSource.isNullOrEmpty) {
-      SmartDialog.showToast('音频源为空');
-    } else {
-      await (_videoPlayerController!.platform as NativePlayer).setProperty(
-        'audio-files',
-        UniversalPlatform.isWindows
-            ? dataSource.audioSource!.replaceAll(';', '\\;')
-            : dataSource.audioSource!.replaceAll(':', '\\:'),
-      );
+    if (!isLive) {
+      if (dataSource.audioSource.isNullOrEmpty) {
+        SmartDialog.showToast('音频源为空');
+      } else {
+        await (_videoPlayerController!.platform as NativePlayer).setProperty(
+          'audio-files',
+          UniversalPlatform.isWindows
+              ? dataSource.audioSource!.replaceAll(';', '\\;')
+              : dataSource.audioSource!.replaceAll(':', '\\:'),
+        );
+      }
     }
     await _videoPlayerController!.open(
       Media(
@@ -1158,7 +1162,7 @@ class PlPlayerController {
     }
   }
 
-  bool? isTriple;
+  bool tripling = false;
 
   /// 隐藏控制条
   void hideTaskControls() {
@@ -1167,7 +1171,7 @@ class PlPlayerController {
     }
     Duration waitingTime = Duration(seconds: enableLongShowControl ? 30 : 3);
     _timer = Timer(waitingTime, () {
-      if (!isSliderMoving.value && isTriple != true) {
+      if (!isSliderMoving.value && !tripling) {
         controls = false;
       }
       _timer = null;
@@ -1312,7 +1316,9 @@ class PlPlayerController {
   /// 设置后台播放
   Future<void> setBackgroundPlay(bool val) async {
     videoPlayerServiceHandler.enableBackgroundPlay = val;
-    setting.put(SettingBoxKey.enableBackgroundPlay, val);
+    if (!tempPlayerConf) {
+      setting.put(SettingBoxKey.enableBackgroundPlay, val);
+    }
   }
 
   set controls(bool visible) {
@@ -1592,10 +1598,12 @@ class PlPlayerController {
 
   void setContinuePlayInBackground() {
     _continuePlayInBackground.value = !_continuePlayInBackground.value;
-    setting.put(
-      SettingBoxKey.continuePlayInBackground,
-      _continuePlayInBackground.value,
-    );
+    if (!tempPlayerConf) {
+      setting.put(
+        SettingBoxKey.continuePlayInBackground,
+        _continuePlayInBackground.value,
+      );
+    }
   }
 
   void setOnlyPlayAudio() {

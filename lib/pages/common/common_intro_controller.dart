@@ -1,4 +1,4 @@
-import 'dart:async' show Timer;
+import 'dart:async' show FutureOr, Timer;
 
 import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -38,6 +38,17 @@ abstract class CommonIntroController extends GetxController {
 
   final Rx<List<VideoTagItem>?> videoTags = Rx<List<VideoTagItem>?>(null);
 
+  bool get hasTriple => hasLike.value && hasCoin && hasFav.value;
+
+  bool isProcessing = false;
+  Future<void> handleAction(FutureOr Function() action) async {
+    if (!isProcessing) {
+      isProcessing = true;
+      await action();
+      isProcessing = false;
+    }
+  }
+
   Set? favIds;
   final Rx<FavFolderData> favFolderData = FavFolderData().obs;
 
@@ -53,6 +64,11 @@ abstract class CommonIntroController extends GetxController {
 
   bool prevPlay();
   bool nextPlay();
+
+  Future<void> actionLikeVideo();
+  void actionCoinVideo();
+  void actionTriple();
+  void actionShareVideo(BuildContext context);
 
   // 同时观看
   final bool isShowOnlineTotal = Pref.enableOnlineTotal;

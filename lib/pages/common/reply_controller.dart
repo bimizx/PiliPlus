@@ -82,8 +82,8 @@ abstract class ReplyController<R> extends CommonListController<R, ReplyInfo> {
   @override
   Future<void> onRefresh() {
     cursorNext = null;
-    paginationReply = null;
     subjectControl = null;
+    paginationReply = null;
     return super.onRefresh();
   }
 
@@ -105,33 +105,50 @@ abstract class ReplyController<R> extends CommonListController<R, ReplyInfo> {
     });
   }
 
+  (bool inputDisable, String? hint) get replyHint {
+    try {
+      if (subjectControl != null && subjectControl!.hasRootText()) {
+        if (subjectControl!.inputDisable) {
+          SmartDialog.showToast(subjectControl!.rootText);
+          return (true, null);
+        }
+        if ((subjectControl!.hasSwitcherType() &&
+                subjectControl!.switcherType != 1) ||
+            subjectControl!.rootText.contains('可发评论')) {
+          return (false, subjectControl!.rootText);
+        }
+      }
+    } catch (_) {}
+    return (false, null);
+  }
+
   void onReply(
     BuildContext context, {
     int? oid,
     ReplyInfo? replyItem,
     int? replyType,
   }) {
-    assert(replyItem != null || (oid != null && replyType != null));
-    String? hint;
-    try {
-      if (subjectControl != null && subjectControl!.hasRootText()) {
-        if (subjectControl!.inputDisable) {
-          SmartDialog.showToast(subjectControl!.rootText);
-          return;
-        }
-        if ((subjectControl!.hasSwitcherType() &&
-                subjectControl!.switcherType != 1) ||
-            subjectControl!.rootText.contains('可发评论')) {
-          hint = subjectControl!.rootText;
-        }
+    if (loadingState.value case Error error) {
+      if (error.errMsg?.contains('关闭评论区') == true) {
+        SmartDialog.showToast(error.errMsg!);
+        return;
       }
-    } catch (_) {}
-    dynamic key = oid ?? replyItem!.oid + replyItem.id;
+    }
+
+    assert(replyItem != null || (oid != null && replyType != null));
+
+    final (bool inputDisable, String? hint) = replyHint;
+    if (inputDisable) {
+      return;
+    }
+
+    final key = oid ?? replyItem!.oid + replyItem.id;
     Navigator.of(context)
         .push(
           GetDialogRoute(
             pageBuilder: (buildContext, animation, secondaryAnimation) {
               return ReplyPage(
+                hint: hint,
                 oid: oid ?? replyItem!.oid.toInt(),
                 root: oid != null ? 0 : replyItem!.id.toInt(),
                 parent: oid != null ? 0 : replyItem!.id.toInt(),
@@ -145,7 +162,6 @@ abstract class ReplyController<R> extends CommonListController<R, ReplyInfo> {
                     savedReplies[key] = reply.toList();
                   }
                 },
-                hint: hint,
               );
             },
             transitionDuration: const Duration(milliseconds: 500),

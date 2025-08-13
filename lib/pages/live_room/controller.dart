@@ -12,7 +12,6 @@ import 'package:PiliPlus/models_new/live/live_room_play_info/codec.dart';
 import 'package:PiliPlus/models_new/live/live_room_play_info/data.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/data_source.dart';
-import 'package:PiliPlus/services/account_service.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/tcp/live.dart';
 import 'package:PiliPlus/utils/accounts.dart';
@@ -32,6 +31,7 @@ class LiveRoomController extends GetxController {
   final String heroTag;
 
   int roomId = Get.arguments;
+  DanmakuController? danmakuController;
   PlPlayerController plPlayerController = PlPlayerController.getInstance(
     isLive: true,
   );
@@ -61,7 +61,7 @@ class LiveRoomController extends GetxController {
   List<RichTextItem>? savedDanmaku;
   RxList<dynamic> messages = [].obs;
   RxBool disableAutoScroll = false.obs;
-  LiveMessageStream? msgStream;
+  LiveMessageStream? _msgStream;
   late final ScrollController scrollController = ScrollController()
     ..addListener(listener);
 
@@ -70,23 +70,33 @@ class LiveRoomController extends GetxController {
   final RxBool isPortrait = false.obs;
   late List<({int code, String desc})> acceptQnList = [];
 
-  late final isLogin = accountService.isLogin.value;
-  AccountService accountService = Get.find<AccountService>();
+  late final bool isLogin;
+  late final int mid;
+
+  String? videoUrl;
+  bool? isPlaying;
+  late bool isFullScreen = false;
 
   @override
   void onInit() {
     super.onInit();
+    final account = Accounts.heartbeat;
+    isLogin = account.isLogin;
+    mid = account.mid;
     queryLiveUrl();
     queryLiveInfoH5();
-    if (Accounts.heartbeat.isLogin && !Pref.historyPause) {
+    if (isLogin && !Pref.historyPause) {
       VideoHttp.roomEntryAction(roomId: roomId);
     }
   }
 
-  Future<void> playerInit(String source) {
+  Future<void>? playerInit({bool autoplay = true}) {
+    if (videoUrl == null) {
+      return null;
+    }
     return plPlayerController.setDataSource(
       DataSource(
-        videoSource: source,
+        videoSource: videoUrl,
         audioSource: null,
         type: DataSourceType.network,
         httpHeaders: {
@@ -95,7 +105,8 @@ class LiveRoomController extends GetxController {
           'referer': HttpString.baseUrl,
         },
       ),
-      autoplay: true,
+      isLive: true,
+      autoplay: autoplay,
       isVertical: isPortrait.value,
     );
   }
@@ -145,8 +156,8 @@ class LiveRoomController extends GetxController {
               .firstWhereOrNull((element) => element.code == currentQn)
               ?.description ??
           currentQn.toString();
-      String videoUrl = VideoUtils.getCdnUrl(item);
-      await playerInit(videoUrl);
+      videoUrl = VideoUtils.getCdnUrl(item);
+      await playerInit();
       isLoaded.value = true;
     }
   }
@@ -187,8 +198,7 @@ class LiveRoomController extends GetxController {
     );
   }
 
-  void scrollToBottom() {
-    if (disableAutoScroll.value) return;
+  void scrollToBottom([_]) {
     if (scrollController.hasClients) {
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
@@ -198,36 +208,37 @@ class LiveRoomController extends GetxController {
     }
   }
 
-  void liveMsg() {
+  void closeLiveMsg() {
+    _msgStream?.close();
+    _msgStream = null;
+  }
+
+  void startLiveMsg() {
     if (messages.isEmpty) {
       LiveHttp.liveRoomDanmaPrefetch(roomId: roomId).then((v) {
         if (v['status']) {
-          if ((v['data'] as List?)?.isNotEmpty == true) {
+          if (v['data'] case List list) {
             try {
               messages.addAll(
-                (v['data'] as List)
-                    .map(
-                      (obj) => {
-                        'name': obj['user']['base']['name'],
-                        'uid': obj['user']['uid'],
-                        'text': obj['text'],
-                        'emots': obj['emots'],
-                        'uemote': obj['emoticon']['emoticon_unique'] != ""
-                            ? obj['emoticon']
-                            : null,
-                      },
-                    )
-                    .toList(),
+                list.map(
+                  (obj) => {
+                    'name': obj['user']['base']['name'],
+                    'uid': obj['user']['uid'],
+                    'text': obj['text'],
+                    'emots': obj['emots'],
+                    'uemote': obj['emoticon']['emoticon_unique'] != ""
+                        ? obj['emoticon']
+                        : null,
+                  },
+                ),
               );
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => scrollToBottom(),
-              );
+              WidgetsBinding.instance.addPostFrameCallback(scrollToBottom);
             } catch (_) {}
           }
         }
       });
     }
-    if (msgStream != null) {
+    if (_msgStream != null) {
       return;
     }
     if (dmInfo != null) {
@@ -261,8 +272,7 @@ class LiveRoomController extends GetxController {
     cancelLiveTimer();
     savedDanmaku?.clear();
     savedDanmaku = null;
-    msgStream?.close();
-    msgStream = null;
+    closeLiveMsg();
     scrollController
       ..removeListener(listener)
       ..dispose();
@@ -287,11 +297,11 @@ class LiveRoomController extends GetxController {
     if (info.hostList.isNullOrEmpty) {
       return;
     }
-    msgStream =
+    _msgStream =
         LiveMessageStream(
             streamToken: info.token!,
             roomId: roomId,
-            uid: Accounts.main.mid,
+            uid: mid,
             servers: info.hostList!
                 .map((host) => 'wss://${host.host}:${host.wssPort}/sub')
                 .toList(),
@@ -320,12 +330,14 @@ class LiveRoomController extends GetxController {
                       extra['content'],
                       color: DmUtils.decimalToColor(extra['color']),
                       type: DmUtils.getPosition(extra['mode']),
-                      selfSend: isLogin && uid == accountService.mid,
+                      selfSend: isLogin && uid == mid,
                     ),
                   );
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => scrollToBottom(),
-                  );
+                  if (!isFullScreen && !disableAutoScroll.value) {
+                    WidgetsBinding.instance.addPostFrameCallback(
+                      scrollToBottom,
+                    );
+                  }
                 }
               }
             } catch (_) {}
@@ -354,14 +366,14 @@ class LiveRoomController extends GetxController {
   }
 
   Future<void> onLike() async {
-    if (!Accounts.heartbeat.isLogin) {
+    if (!isLogin) {
       likeClickTime.value = 0;
       return;
     }
     var res = await LiveHttp.liveLikeReport(
       clickTime: likeClickTime.value,
       roomId: roomId,
-      uid: accountService.mid,
+      uid: mid,
       anchorId: roomInfoH5.value?.roomInfo?.uid,
     );
     if (res['status']) {

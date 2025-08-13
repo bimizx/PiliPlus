@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
+import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/grpc/bilibili/main/community/reply/v1.pb.dart'
     show ReplyInfo;
@@ -50,7 +51,6 @@ import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:auto_orientation/auto_orientation.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:floating/floating.dart';
@@ -68,8 +68,6 @@ class VideoDetailPageV extends StatefulWidget {
 
   @override
   State<VideoDetailPageV> createState() => _VideoDetailPageVState();
-  static final RouteObserver<PageRoute> routeObserver =
-      RouteObserver<PageRoute>();
 }
 
 class _VideoDetailPageVState extends State<VideoDetailPageV>
@@ -381,7 +379,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     } else {
       PlPlayerController.updatePlayCount();
     }
-    VideoDetailPageV.routeObserver.unsubscribe(this);
+    PageUtils.routeObserver.unsubscribe(this);
     showStatusBar();
     _introScrollController?.dispose();
     super.dispose();
@@ -476,7 +474,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    VideoDetailPageV.routeObserver.subscribe(
+    PageUtils.routeObserver.subscribe(
       this,
       ModalRoute.of(context)! as PageRoute,
     );
@@ -1640,15 +1638,15 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 child: GestureDetector(
                   onTap: handlePlay,
                   child: Obx(
-                    () => CachedNetworkImage(
-                      imageUrl: videoDetailController.cover.value.http2https,
+                    () => NetworkImgLayer(
+                      radius: 0,
+                      quality: 60,
+                      src: videoDetailController.cover.value,
                       width: width,
                       height: height,
-                      fit: BoxFit.cover,
-                      fadeOutDuration: const Duration(milliseconds: 120),
-                      fadeInDuration: const Duration(milliseconds: 120),
-                      memCacheWidth: width.cacheSize(context),
-                      placeholder: (context, url) => Center(
+                      boxFit: BoxFit.cover,
+                      forceUseCacheWidth: true,
+                      getPlaceHolder: () => Center(
                         child: Image.asset('assets/images/loading.png'),
                       ),
                     ),
@@ -1945,11 +1943,14 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           ],
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SeasonPanel(
-              heroTag: heroTag,
-              onTap: false,
-              showEpisodes: showEpisodes,
-              ugcIntroController: ugcIntroController,
+            child: Obx(
+              () => SeasonPanel(
+                key: ValueKey(introController.videoDetail.value),
+                heroTag: heroTag,
+                onTap: false,
+                showEpisodes: showEpisodes,
+                ugcIntroController: ugcIntroController,
+              ),
             ),
           ),
           Expanded(

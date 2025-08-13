@@ -11,6 +11,7 @@ import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -23,9 +24,6 @@ class MainApp extends StatefulWidget {
 
   @override
   State<MainApp> createState() => _MainAppState();
-
-  static final RouteObserver<PageRoute> routeObserver =
-      RouteObserver<PageRoute>();
 }
 
 class _MainAppState extends State<MainApp>
@@ -41,7 +39,12 @@ class _MainAppState extends State<MainApp>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    MainApp.routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+    NetworkImgLayer.reduce =
+        NetworkImgLayer.reduceLuxColor != null && context.isDarkMode;
+    PageUtils.routeObserver.subscribe(
+      this,
+      ModalRoute.of(context) as PageRoute,
+    );
   }
 
   @override
@@ -72,7 +75,7 @@ class _MainAppState extends State<MainApp>
 
   @override
   void dispose() {
-    MainApp.routeObserver.unsubscribe(this);
+    PageUtils.routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     GStorage.close();
     PiliScheme.listener?.cancel();

@@ -595,7 +595,7 @@ class _CreateDynPanelState extends CommonRichTextPubPageState<CreateDynPanel> {
       height: height,
       child: GridView(
         padding: const EdgeInsets.only(left: 12, bottom: 12, right: 12),
-        gridDelegate: const SliverGridDelegateWithExtentAndRatio(
+        gridDelegate: SliverGridDelegateWithExtentAndRatio(
           maxCrossAxisExtent: 65,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
@@ -737,10 +737,12 @@ class _CreateDynPanelState extends CommonRichTextPubPageState<CreateDynPanel> {
       SmartDialog.showToast('发布成功');
       var id = result['data']?['dyn_id'];
       RequestUtils.insertCreatedDyn(id);
-      RequestUtils.checkCreatedDyn(
-        id: id,
-        dynText: editController.rawText,
-      );
+      if (!_isPrivate.value) {
+        RequestUtils.checkCreatedDyn(
+          id: id,
+          dynText: editController.rawText,
+        );
+      }
     } else {
       SmartDialog.showToast(result['msg']);
       if (kDebugMode) debugPrint('failed to publish: ${result['msg']}');

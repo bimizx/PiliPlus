@@ -37,16 +37,16 @@ jobs:
           version_name=$(yq e '.version' pubspec.yaml | cut -d "+" -f 1)
           sed -i '' "s/version: .*/version: $version_name+$(git rev-list --count HEAD)/" pubspec.yaml
 
-    - name: Checkout code
-      uses: actions/checkout@main
+      - name: Checkout code
+        uses: actions/checkout@main
 
-    - name: Start SSH session with tmate
-      uses: mxschmitt/action-tmate@master
+      - name: Start SSH session with tmate
+        uses: mxschmitt/action-tmate@master
 
-    - name: Keep session alive
-      run: |
-        echo "SSH 会话已启动，等待连接..."
-        sleep 12h
+      - name: Keep session alive
+        run: |
+          echo "SSH 会话已启动，等待连接..."
+          sleep 12h
 
       - name: Build iOS
         run: |

@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:auto_orientation/auto_orientation.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 bool _isDesktopFullScreen = false;
 
+@pragma('vm:notify-debugger-on-exception')
 Future<void> enterDesktopFullscreen({bool inAppFullScreen = false}) async {
   if (!inAppFullScreen && !_isDesktopFullScreen) {
     _isDesktopFullScreen = true;
@@ -16,12 +17,11 @@ Future<void> enterDesktopFullscreen({bool inAppFullScreen = false}) async {
       await const MethodChannel(
         'com.alexmercerind/media_kit_video',
       ).invokeMethod('Utils.EnterNativeFullscreen');
-    } catch (_) {
-      if (kDebugMode) rethrow;
-    }
+    } catch (_) {}
   }
 }
 
+@pragma('vm:notify-debugger-on-exception')
 Future<void> exitDesktopFullscreen() async {
   if (_isDesktopFullScreen) {
     _isDesktopFullScreen = false;
@@ -29,19 +29,16 @@ Future<void> exitDesktopFullscreen() async {
       await const MethodChannel(
         'com.alexmercerind/media_kit_video',
       ).invokeMethod('Utils.ExitNativeFullscreen');
-    } catch (_) {
-      if (kDebugMode) rethrow;
-    }
+    } catch (_) {}
   }
 }
 
 //横屏
+@pragma('vm:notify-debugger-on-exception')
 Future<void> landscape() async {
   try {
     await AutoOrientation.landscapeAutoMode(forceSensor: true);
-  } catch (_) {
-    if (kDebugMode) rethrow;
-  }
+  } catch (_) {}
 }
 
 //竖屏
@@ -53,7 +50,7 @@ Future<void> verticalScreenForTwoSeconds() async {
 //全向
 bool allowRotateScreen = Pref.allowRotateScreen;
 Future<void> autoScreen() async {
-  if (Utils.isMobile && allowRotateScreen) {
+  if (PlatformUtils.isMobile && allowRotateScreen) {
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       // DeviceOrientation.portraitDown,
@@ -63,8 +60,8 @@ Future<void> autoScreen() async {
   }
 }
 
-Future<void> fullAutoModeForceSensor() async {
-  await AutoOrientation.fullAutoMode(forceSensor: true);
+Future<void> fullAutoModeForceSensor() {
+  return AutoOrientation.fullAutoMode(forceSensor: true);
 }
 
 bool _showStatusBar = true;

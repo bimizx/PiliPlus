@@ -5,24 +5,25 @@ import 'dart:io';
 import 'package:PiliPlus/build_config.dart';
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
-import 'package:PiliPlus/common/widgets/list_tile.dart';
+import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/services/logger.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
-import 'package:PiliPlus/utils/cache_manage.dart';
-import 'package:PiliPlus/utils/context_ext.dart';
+import 'package:PiliPlus/utils/cache_manager.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/login_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/update.dart';
 import 'package:PiliPlus/utils/utils.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:re_highlight/languages/json.dart';
@@ -58,11 +59,29 @@ class _AboutPageState extends State<AboutPage> {
     super.dispose();
   }
 
-  Future<void> getCacheSize() async {
-    cacheSize.value = CacheManage.formatSize(
-      await CacheManage.loadApplicationCache(),
-    );
+  void getCacheSize() {
+    CacheManager.loadApplicationCache().then((res) {
+      if (mounted) {
+        cacheSize.value = CacheManager.formatSize(res);
+      }
+    });
   }
+
+  void _showDialog() => showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      constraints: StyleString.dialogFixedConstraints,
+      content: TextField(
+        autofocus: true,
+        onSubmitted: (value) {
+          Get.back();
+          if (value.isNotEmpty) {
+            PageUtils.handleWebview(value, inApp: true);
+          }
+        },
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -84,33 +103,18 @@ class _AboutPageState extends State<AboutPage> {
         children: [
           GestureDetector(
             onTap: () {
-              _pressCount++;
-              if (_pressCount == 5) {
+              if (++_pressCount == 5) {
                 _pressCount = 0;
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      content: TextField(
-                        autofocus: true,
-                        onSubmitted: (value) {
-                          Get.back();
-                          if (value.isNotEmpty) {
-                            PageUtils.handleWebview(value, inApp: true);
-                          }
-                        },
-                      ),
-                    );
-                  },
-                );
+                _showDialog();
               }
             },
-            child: ExcludeSemantics(
-              child: Image.asset(
-                width: 150,
-                height: 150,
-                'assets/images/logo/logo.png',
-              ),
+            onSecondaryTap: PlatformUtils.isDesktop ? _showDialog : null,
+            child: Image.asset(
+              width: 150,
+              height: 150,
+              excludeFromSemantics: true,
+              cacheWidth: 150.cacheSize(context),
+              'assets/images/logo/logo.png',
             ),
           ),
           ListTile(
@@ -138,7 +142,7 @@ class _AboutPageState extends State<AboutPage> {
           ListTile(
             onTap: () => Update.checkUpdate(false),
             onLongPress: () => Utils.copyText(currentVersion),
-            onSecondaryTap: Utils.isMobile
+            onSecondaryTap: PlatformUtils.isMobile
                 ? null
                 : () => Utils.copyText(currentVersion),
             title: const Text('当前版本'),
@@ -160,7 +164,7 @@ Commit Hash: ${BuildConfig.commitHash}''',
               '${Constants.sourceCodeUrl}/commit/${BuildConfig.commitHash}',
             ),
             onLongPress: () => Utils.copyText(BuildConfig.commitHash),
-            onSecondaryTap: Utils.isMobile
+            onSecondaryTap: PlatformUtils.isMobile
                 ? null
                 : () => Utils.copyText(BuildConfig.commitHash),
           ),
@@ -200,7 +204,9 @@ Commit Hash: ${BuildConfig.commitHash}''',
           ListTile(
             onTap: () => Get.toNamed('/logs'),
             onLongPress: LoggerUtils.clearLogs,
-            onSecondaryTap: Utils.isMobile ? null : LoggerUtils.clearLogs,
+            onSecondaryTap: PlatformUtils.isMobile
+                ? null
+                : LoggerUtils.clearLogs,
             leading: const Icon(Icons.bug_report_outlined),
             title: const Text('错误日志'),
             subtitle: Text('长按清除日志', style: subTitleStyle),
@@ -216,7 +222,7 @@ Commit Hash: ${BuildConfig.commitHash}''',
                   onConfirm: () async {
                     SmartDialog.showLoading(msg: '正在清除...');
                     try {
-                      await CacheManage.clearLibraryCache();
+                      await CacheManager.clearLibraryCache();
                       SmartDialog.showToast('清除成功');
                     } catch (err) {
                       SmartDialog.showToast(err.toString());
@@ -240,12 +246,10 @@ Commit Hash: ${BuildConfig.commitHash}''',
           ListTile(
             title: const Text('导入/导出登录信息'),
             leading: const Icon(Icons.import_export_outlined),
-            onTap: () => showInportExportDialog<Map>(
+            onTap: () => showImportExportDialog<Map>(
               context,
               title: '登录信息',
-              toJson: () => const JsonEncoder.withIndent(
-                '    ',
-              ).convert(Accounts.account.toMap()),
+              toJson: () => Utils.jsonEncoder.convert(Accounts.account.toMap()),
               fromJson: (json) async {
                 final res = json.map(
                   (key, value) => MapEntry(key, LoginAccount.fromJson(value)),
@@ -264,7 +268,7 @@ Commit Hash: ${BuildConfig.commitHash}''',
             title: const Text('导入/导出设置'),
             dense: false,
             leading: const Icon(Icons.import_export_outlined),
-            onTap: () => showInportExportDialog(
+            onTap: () => showImportExportDialog(
               context,
               title: '设置',
               label: GStorage.setting.name,
@@ -305,6 +309,7 @@ Commit Hash: ${BuildConfig.commitHash}''',
                           GStorage.video.clear(),
                           GStorage.historyWord.clear(),
                           Accounts.clear(),
+                          GStorage.watchProgress.clear(),
                         ]);
                         SmartDialog.showToast('重置成功');
                       },
@@ -321,11 +326,11 @@ Commit Hash: ${BuildConfig.commitHash}''',
   }
 }
 
-Future<void> showInportExportDialog<T>(
+Future<void> showImportExportDialog<T>(
   BuildContext context, {
   required String title,
   String? label,
-  required String Function() toJson,
+  required ValueGetter<String> toJson,
   required FutureOr<bool> Function(T json) fromJson,
 }) => showDialog(
   context: context,
@@ -339,30 +344,17 @@ Future<void> showInportExportDialog<T>(
           ListTile(
             dense: true,
             title: const Text('导出文件至本地', style: style),
-            onTap: () async {
+            onTap: () {
               Get.back();
               final res = utf8.encode(toJson());
               final name =
                   'piliplus_${label}_${context.isTablet ? 'pad' : 'phone'}_'
                   '${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}.json';
-              try {
-                final path = await FilePicker.platform.saveFile(
-                  allowedExtensions: ['json'],
-                  type: FileType.custom,
-                  fileName: name,
-                  bytes: Utils.isDesktop ? null : res,
-                );
-                if (path == null) {
-                  SmartDialog.showToast("取消保存");
-                  return;
-                }
-                if (Utils.isDesktop) {
-                  await File(path).writeAsBytes(res);
-                }
-                SmartDialog.showToast("已保存");
-              } catch (e) {
-                SmartDialog.showToast("保存失败: $e");
-              }
+              Utils.saveBytes2File(
+                name: name,
+                bytes: res,
+                allowedExtensions: const ['json'],
+              );
             },
           ),
         ListTile(
@@ -391,7 +383,7 @@ Future<void> showInportExportDialog<T>(
             late final String formatText;
             try {
               json = jsonDecode(text);
-              formatText = const JsonEncoder.withIndent('    ').convert(json);
+              formatText = Utils.jsonEncoder.convert(json);
             } catch (e) {
               SmartDialog.showToast('解析json失败：$e');
               return;
@@ -446,6 +438,73 @@ Future<void> showInportExportDialog<T>(
                   ],
                 );
               },
+            );
+          },
+        ),
+        ListTile(
+          dense: true,
+          title: Text('输入$title', style: style),
+          onTap: () {
+            Get.back();
+            final key = GlobalKey<FormFieldState<String>>();
+            late T json;
+            String? forceErrorText;
+
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('输入$title'),
+                constraints: StyleString.dialogFixedConstraints,
+                content: TextFormField(
+                  key: key,
+                  minLines: 4,
+                  maxLines: 12,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    errorMaxLines: 3,
+                  ),
+                  validator: (value) {
+                    if (forceErrorText != null) return forceErrorText;
+                    try {
+                      json = jsonDecode(value!) as T;
+                      return null;
+                    } catch (e) {
+                      if (e is FormatException) {}
+                      return '解析json失败：$e';
+                    }
+                  },
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: Get.back,
+                    child: Text(
+                      '取消',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      if (key.currentState?.validate() == true) {
+                        try {
+                          if (await fromJson(json)) {
+                            Get.back();
+                            SmartDialog.showToast('导入成功');
+                            return;
+                          }
+                        } catch (e) {
+                          forceErrorText = '导入失败：$e';
+                        }
+                        key.currentState?.validate();
+                        forceErrorText = null;
+                      }
+                    },
+                    child: const Text('确定'),
+                  ),
+                ],
+              ),
             );
           },
         ),

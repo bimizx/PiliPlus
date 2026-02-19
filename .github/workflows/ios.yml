@@ -1,19 +1,14 @@
 name: Build for iOS
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - ready_for_review
-    paths-ignore:
-      - "**.md"
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      branch:
+      tag:
+        description: "tag"
         required: false
-        default: "main"
+        default: ""
+        type: string
+  workflow_dispatch:
 
 jobs:
   build-macos-app:
@@ -21,9 +16,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
 
       - name: Setup flutter
@@ -36,14 +30,35 @@ jobs:
         shell: pwsh
         run: lib/scripts/build.ps1
 
+      - name: apply modal barrier patch
+        working-directory: ${{ env.FLUTTER_ROOT }}
+        run: git apply $GITHUB_WORKSPACE/lib/scripts/modal_barrier_patch.diff || true
+        continue-on-error: true
+
+      - name: apply mouse cursor patch
+        working-directory: ${{ env.FLUTTER_ROOT }}
+        run: git apply $GITHUB_WORKSPACE/lib/scripts/mouse_cursor_patch.diff || true
+        continue-on-error: true
+
       - name: Build iOS
         run: |
           flutter build ios --release --no-codesign --dart-define-from-file=pili_release.json
           ln -sf ./build/ios/iphoneos Payload
-          zip -r9 ios-release-no-sign.ipa Payload/runner.app
+          # make AltSign happy...
+          find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;
+          zip -r9 PiliPlus_ios_${{env.version}}.ipa Payload/runner.app
+
+      - name: Release
+        if: ${{ github.event.inputs.tag != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: ${{ github.event.inputs.tag }}
+          files: |
+            PiliPlus_ios_*.ipa
 
       - name: Upload ios release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: ios-release
-          path: ios-release-no-sign.ipa
+          name: iOS-release
+          path: PiliPlus_ios_*.ipa

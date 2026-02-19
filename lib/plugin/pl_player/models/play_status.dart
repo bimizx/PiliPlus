@@ -1,19 +1,20 @@
 import 'package:get/get.dart';
 
-enum PlayerStatus { completed, playing, paused }
+enum PlayerStatus {
+  completed,
+  playing,
+  paused
+  ;
 
-class PlPlayerStatus {
-  Rx<PlayerStatus> status = Rx(PlayerStatus.paused);
+  bool get isCompleted => this == PlayerStatus.completed;
+  bool get isPlaying => this == PlayerStatus.playing;
+  bool get isPaused => this == PlayerStatus.paused;
+}
 
-  bool get playing {
-    return status.value == PlayerStatus.playing;
-  }
+typedef PlPlayerStatus = Rx<PlayerStatus>;
 
-  bool get paused {
-    return status.value == PlayerStatus.paused;
-  }
-
-  bool get completed {
-    return status.value == PlayerStatus.completed;
-  }
+extension PlPlayerStatusExt on PlPlayerStatus {
+  bool get isPlaying => value.isPlaying;
+  bool get isPaused => value.isPaused;
+  bool get isCompleted => value.isCompleted;
 }

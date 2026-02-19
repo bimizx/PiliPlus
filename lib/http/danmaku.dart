@@ -1,11 +1,12 @@
 import 'package:PiliPlus/http/api.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/models_new/danmaku/post.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:dio/dio.dart';
 
 abstract final class DanmakuHttp {
-  static Future shootDanmaku({
+  static Future<LoadingState<DanmakuPost>> shootDanmaku({
     int type = 1, //弹幕类选择(1：视频弹幕 2：漫画弹幕)
     required int oid, // 视频cid
     required String msg, //弹幕文本(长度小于 100 字符)
@@ -16,7 +17,7 @@ abstract final class DanmakuHttp {
     required String bvid,
     int? progress, // 弹幕出现在视频内的时间（单位为毫秒，默认为0）
     int? color, // 弹幕颜色(默认白色，16777215）
-    int? fontsize, // 弹幕字号（默认25）
+    int? fontSize, // 弹幕字号（默认25）
     int? pool, // 弹幕池选择（0：普通池 1：字幕池 2：特殊池（代码/BAS弹幕）默认普通池，0）
     //int? rnd,// 当前时间戳*1000000（若无此项，则发送弹幕冷却时间限制为90s；若有此项，则发送弹幕冷却时间限制为5s）
     bool colorful = false, //60001：专属渐变彩色（需要会员）
@@ -28,7 +29,7 @@ abstract final class DanmakuHttp {
     // assert(aid != null || bvid != null);
     // assert(csrf != null || access_key != null);
     // 构建参数对象
-    var data = <String, Object>{
+    final data = <String, Object>{
       'type': type,
       'oid': oid,
       'msg': msg,
@@ -37,7 +38,7 @@ abstract final class DanmakuHttp {
       'bvid': bvid,
       'progress': ?progress,
       'color': ?colorful ? 16777215 : color,
-      'fontsize': ?fontsize,
+      'fontsize': ?fontSize,
       'pool': ?pool,
       'rnd': DateTime.now().microsecondsSinceEpoch,
       'colorful': ?colorful ? 60001 : null,
@@ -46,27 +47,16 @@ abstract final class DanmakuHttp {
       // 'access_key': access_key,
     };
 
-    var response = await Request().post(
+    final res = await Request().post(
       Api.shootDanmaku,
       data: data,
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
-    if (response.statusCode != 200) {
-      return {
-        'status': false,
-        'msg': '弹幕发送失败，状态码:${response.statusCode}',
-      };
-    }
-    if (response.data['code'] == 0) {
-      return {
-        'status': true,
-        'data': response.data['data'],
-      };
+
+    if (res.data['code'] == 0) {
+      return Success(DanmakuPost.fromJson(res.data['data']));
     } else {
-      return {
-        'status': false,
-        'msg': "${response.data['code']}: ${response.data['message']}",
-      };
+      return Error(res.data['message'], code: res.data['code']);
     }
   }
 
@@ -95,11 +85,11 @@ abstract final class DanmakuHttp {
     if (res.data['code'] == 0) {
       return const Success(null);
     } else {
-      return Error(res.data['message']);
+      return Error(res.data['message'], code: res.data['code']);
     }
   }
 
-  static Future<Map<String, dynamic>> danmakuReport({
+  static Future<LoadingState<Null>> danmakuReport({
     required int reason,
     required int cid,
     required int id,
@@ -125,27 +115,23 @@ abstract final class DanmakuHttp {
       data: data,
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
-    if (res.data['code'] == 0) {
-      return {
-        'status': true,
-        'data': res.data['data']['block'],
-      };
-    } else {
-      return {
-        'status': false,
-        'msg': res.data['message'],
-      };
 
-      /// {
-      ///       0: "举报已提交",
-      ///       "-1": "举报失败，请先激活账号。",
-      ///       "-2": "举报失败，系统拒绝受理您的举报请求。",
-      ///       "-3": "举报失败，您已经被禁言。",
-      ///       "-4": "您的操作过于频繁，请稍后再试。",
-      ///       "-5": "您已经举报过这条弹幕了。",
-      ///       "-6": "举报失败，系统错误。"
-      /// }
+    if (res.data['code'] == 0) {
+      return const Success(null);
+    } else {
+      return Error(res.data['message']);
     }
+
+    /// res.data['data']['block']
+    /// {
+    ///       0: "举报已提交",
+    ///       "-1": "举报失败，请先激活账号。",
+    ///       "-2": "举报失败，系统拒绝受理您的举报请求。",
+    ///       "-3": "举报失败，您已经被禁言。",
+    ///       "-4": "您的操作过于频繁，请稍后再试。",
+    ///       "-5": "您已经举报过这条弹幕了。",
+    ///       "-6": "举报失败，系统错误。"
+    /// }
   }
 
   static Future<LoadingState<String?>> danmakuRecall({

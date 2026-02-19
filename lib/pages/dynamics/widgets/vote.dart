@@ -1,22 +1,31 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:PiliPlus/common/widgets/avatars.dart';
+import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/dialog/report.dart';
+import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/http/dynamics.dart';
 import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/models/dynamics/vote_model.dart';
+import 'package:PiliPlus/models_new/followee_votes/vote.dart';
+import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 
 class VotePanel extends StatefulWidget {
   final VoteInfo voteInfo;
-  final FutureOr<LoadingState<VoteInfo>> Function(Set<int>, bool) callback;
+  final FutureOr<LoadingState<VoteInfo>> Function(Set<int>, bool) onVote;
 
   const VotePanel({
     super.key,
     required this.voteInfo,
-    required this.callback,
+    required this.onVote,
   });
 
   @override
@@ -24,21 +33,32 @@ class VotePanel extends StatefulWidget {
 }
 
 class _VotePanelState extends State<VotePanel> {
-  bool anonymity = false;
+  late bool anonymous = false;
 
   late VoteInfo _voteInfo;
-  late final RxSet<int> groupValue = (_voteInfo.myVotes?.toSet() ?? {}).obs;
+  late final RxList<int> groupValue =
+      (_voteInfo.myVotes?.toList() ?? <int>[]).obs;
   late var _percentage = _cnt2Percentage(_voteInfo.options);
   late bool _enabled =
       groupValue.isEmpty &&
       _voteInfo.endTime! * 1000 > DateTime.now().millisecondsSinceEpoch;
   late bool _showPercentage = !_enabled;
   late final _maxCnt = _voteInfo.choiceCnt ?? _voteInfo.options.length;
+  final isLogin = Accounts.main.isLogin;
+  late final Rxn<List<FolloweeVote>> followeeVote = Rxn<List<FolloweeVote>>();
 
   @override
   void initState() {
     super.initState();
     _voteInfo = widget.voteInfo;
+    if (isLogin) {
+      DynamicsHttp.followeeVotes(voteId: _voteInfo.voteId).then((res) {
+        if (!mounted) return;
+        if (res case Success(:final response)) {
+          followeeVote.value = response;
+        }
+      });
+    }
   }
 
   @override
@@ -61,33 +81,51 @@ class _VotePanelState extends State<VotePanel> {
         ],
       ),
       Flexible(
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: _voteInfo.options.length,
-          itemBuilder: (context, index) => _buildOptions(index),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: _voteInfo.type == 1
+              ? GridView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _voteInfo.options.length,
+                  gridDelegate: SliverGridDelegateWithExtentAndRatio(
+                    maxCrossAxisExtent: 100,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    mainAxisExtent: MediaQuery.textScalerOf(context).scale(50),
+                  ),
+                  itemBuilder: (context, index) =>
+                      _buildPicOptions(index, theme.colorScheme),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _voteInfo.options.length,
+                  itemBuilder: (context, index) => _buildOptions(index),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 6),
+                ),
         ),
       ),
       if (_enabled) ...[
-        _checkBoxs,
+        _checkBoxes,
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Obx(
             () => OutlinedButton(
               onPressed: groupValue.isNotEmpty
                   ? () async {
-                      final res = await widget.callback(
-                        groupValue,
-                        anonymity,
+                      final res = await widget.onVote(
+                        groupValue.toSet(),
+                        anonymous,
                       );
-                      if (res.isSuccess) {
-                        if (mounted) {
-                          setState(() {
-                            _enabled = false;
-                            _showPercentage = true;
-                            _voteInfo = res.data;
-                            _percentage = _cnt2Percentage(_voteInfo.options);
-                          });
-                        }
+                      if (!mounted) return;
+                      if (res case Success(:final response)) {
+                        _enabled = false;
+                        _showPercentage = true;
+                        _voteInfo = response;
+                        _percentage = _cnt2Percentage(_voteInfo.options);
+                        setState(() {});
                       } else {
                         res.toast();
                       }
@@ -99,12 +137,107 @@ class _VotePanelState extends State<VotePanel> {
         ),
       ],
     ];
+    Widget title = Text(
+      _voteInfo.title ?? '',
+      style: theme.textTheme.titleMedium,
+    );
+    if (isLogin) {
+      title = Row(
+        spacing: 3,
+        crossAxisAlignment: .start,
+        children: [
+          Expanded(child: title),
+          Obx(() {
+            final list = followeeVote.value;
+            if (list != null && list.isNotEmpty) {
+              return GestureDetector(
+                behavior: .opaque,
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      final colorScheme = ColorScheme.of(context);
+                      return AlertDialog(
+                        clipBehavior: .hardEdge,
+                        title: const Text('关注的人的投票'),
+                        contentPadding: const .only(top: 10, bottom: 12),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: .min,
+                            children: list
+                                .map(
+                                  (e) => ListTile(
+                                    dense: true,
+                                    onTap: () =>
+                                        Get.toNamed('/member?mid=${e.mid}'),
+                                    leading: NetworkImgLayer(
+                                      src: e.face,
+                                      width: 40,
+                                      height: 40,
+                                      type: .avatar,
+                                    ),
+                                    title: Text.rich(
+                                      style: const TextStyle(fontSize: 13),
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(text: e.name),
+                                          TextSpan(
+                                            text: ' 投给了',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: colorScheme.outline,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      style: const TextStyle(fontSize: 13),
+                                      e.votes
+                                          .map(
+                                            (vote) => _voteInfo.options
+                                                .firstWhereOrNull(
+                                                  (e) => e.optIdx == vote,
+                                                )
+                                                ?.optDesc,
+                                          )
+                                          .join('、'),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: Row(
+                  mainAxisSize: .min,
+                  children: [
+                    avatars(
+                      colorScheme: theme.colorScheme,
+                      users: list.take(3),
+                    ),
+                    Icon(
+                      size: 18,
+                      color: theme.colorScheme.outline.withValues(alpha: .7),
+                      Icons.keyboard_arrow_right,
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+        ],
+      );
+    }
     Widget child = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_voteInfo.title != null)
-          Text(_voteInfo.title!, style: theme.textTheme.titleMedium),
+        title,
         if (_voteInfo.desc != null)
           Text(
             _voteInfo.desc!,
@@ -157,7 +290,7 @@ class _VotePanelState extends State<VotePanel> {
     return child;
   }
 
-  Widget get _checkBoxs => Row(
+  Widget get _checkBoxes => Row(
     spacing: 16,
     children: [
       CheckBoxText(
@@ -171,47 +304,146 @@ class _VotePanelState extends State<VotePanel> {
       ),
       CheckBoxText(
         text: '匿名',
-        selected: anonymity,
-        onChanged: (val) => anonymity = val,
+        selected: anonymous,
+        onChanged: (val) => anonymous = val,
       ),
     ],
   );
 
-  Widget _buildOptions(int index) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _buildPicOptions(int index, ColorScheme colorScheme) {
+    return Card(
+      clipBehavior: Clip.hardEdge,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(6)),
+      ),
       child: Builder(
         builder: (context) {
           final opt = _voteInfo.options[index];
           final selected = groupValue.contains(opt.optIdx);
-          return PercentageChip(
-            label: opt.optDesc!,
-            percentage: _showPercentage ? _percentage[index] : null,
-            selected: selected,
-            onSelected: !_enabled || (groupValue.length >= _maxCnt && !selected)
+          return InkWell(
+            onTap: !_enabled
                 ? null
-                : (value) => _onSelected(context, value, opt.optIdx!),
+                : () => _onSelected(context, !selected, opt.optIdx!),
+            child: Column(
+              spacing: 5,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => NetworkImgLayer(
+                          src: opt.imgUrl,
+                          width: constraints.maxWidth,
+                          height: constraints.maxHeight,
+                          type: .emote,
+                        ),
+                      ),
+                    ),
+                    if (_enabled || selected)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        width: 20,
+                        height: 20,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: selected
+                                ? colorScheme.primaryContainer
+                                : null,
+                            border: selected
+                                ? null
+                                : Border.all(
+                                    color: colorScheme.primaryContainer,
+                                  ),
+                          ),
+                          child: selected
+                              ? Icon(
+                                  size: 15,
+                                  Icons.check_rounded,
+                                  color: colorScheme.onPrimaryContainer,
+                                )
+                              : null,
+                        ),
+                      ),
+                    if (_showPercentage) ...[
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: -1,
+                        child: LinearProgressIndicator(
+                          // ignore: deprecated_member_use
+                          year2023: true,
+                          value: _percentage[index],
+                        ),
+                      ),
+                      PBadge(
+                        right: 6,
+                        bottom: 8,
+                        type: PBadgeType.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 3,
+                          vertical: 1,
+                        ),
+                        text:
+                            '${(_percentage[index] * 100).toStringAsFixed(0)}%',
+                      ),
+                    ],
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Text(
+                    opt.optDesc!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  void _onSelected(BuildContext context, bool value, int optidx) {
-    bool isMax = groupValue.length >= _maxCnt;
+  Widget _buildOptions(int index) {
+    return Builder(
+      builder: (context) {
+        final opt = _voteInfo.options[index];
+        final selected = groupValue.contains(opt.optIdx);
+        return PercentageChip(
+          label: opt.optDesc!,
+          percentage: _showPercentage ? _percentage[index] : null,
+          selected: selected,
+          onSelected: !_enabled
+              ? null
+              : (value) => _onSelected(context, value, opt.optIdx!),
+        );
+      },
+    );
+  }
+
+  void _onSelected(BuildContext itemCtx, bool value, int optidx) {
+    final bool isMax = groupValue.length >= _maxCnt;
+    if (isMax && value && !groupValue.contains(optidx)) {
+      groupValue
+        ..removeAt(0)
+        ..add(optidx);
+      setState(() {});
+      return;
+    }
+
     if (value) {
       groupValue.add(optidx);
     } else {
       groupValue.remove(optidx);
     }
-    if ((isMax &&
-            _maxCnt != _voteInfo.options.length &&
-            groupValue.length < _maxCnt) ||
-        (groupValue.length >= _maxCnt && _maxCnt < _voteInfo.options.length)) {
-      setState(() {});
-    } else {
-      (context as Element).markNeedsBuild();
-    }
+    (itemCtx as Element).markNeedsBuild();
   }
 
   static List<double> _cnt2Percentage(List<Option> options) {
@@ -312,18 +544,19 @@ Future showVoteDialog(
       showDialog(
         context: context,
         builder: (context) => Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 625),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: VotePanel(
-                voteInfo: voteInfo.data,
-                callback: (votes, anonymity) => DynamicsHttp.doVote(
-                  voteId: voteId,
-                  votes: votes.toList(),
-                  anonymity: anonymity,
-                  dynamicId: dynamicId,
-                ),
+          constraints: const BoxConstraints(
+            minWidth: 280,
+            maxWidth: 625,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: VotePanel(
+              voteInfo: voteInfo.data,
+              onVote: (votes, anonymous) => DynamicsHttp.doVote(
+                voteId: voteId,
+                votes: votes.toList(),
+                anonymous: anonymous,
+                dynamicId: dynamicId,
               ),
             ),
           ),

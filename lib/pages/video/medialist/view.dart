@@ -1,9 +1,9 @@
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/image_save.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/stat/stat.dart';
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/models/common/stat_type.dart';
@@ -11,7 +11,7 @@ import 'package:PiliPlus/models_new/media_list/media_list.dart';
 import 'package:PiliPlus/models_new/video/video_detail/episode.dart';
 import 'package:PiliPlus/pages/common/slide/common_slide_page.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart' hide RefreshCallback;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -57,7 +57,7 @@ class _MediaListPanelState extends State<MediaListPanel>
     final bvid = widget.bvid;
     final bvIndex = widget.mediaList.indexWhere((item) => item.bvid == bvid);
     _controller = ScrollController(
-      initialScrollOffset: bvIndex == -1 ? 0 : bvIndex * 100.0 + 7,
+      initialScrollOffset: bvIndex <= 0 ? 0 : bvIndex * 100.0 + 7,
     );
   }
 
@@ -76,6 +76,7 @@ class _MediaListPanelState extends State<MediaListPanel>
             backgroundColor: Colors.transparent,
             actions: [
               iconButton(
+                iconSize: 20,
                 tooltip: widget.desc ? '顺序播放' : '倒序播放',
                 icon: widget.desc
                     ? const Icon(MdiIcons.sortAscending)
@@ -86,6 +87,7 @@ class _MediaListPanelState extends State<MediaListPanel>
                 },
               ),
               iconButton(
+                iconSize: 20,
                 tooltip: '关闭',
                 icon: const Icon(Icons.close),
                 onPressed: Get.back,
@@ -137,7 +139,7 @@ class _MediaListPanelState extends State<MediaListPanel>
                         widget.mediaList.length < widget.count!)) {
                   widget.loadMoreMedia();
                 }
-                var item = widget.mediaList[index];
+                final item = widget.mediaList[index];
                 final isCurr = item.bvid == widget.bvid;
                 return _buildItem(theme, index, item, isCurr, showDelBtn);
               },
@@ -177,7 +179,7 @@ class _MediaListPanelState extends State<MediaListPanel>
               widget.onChangeEpisode(item);
             },
             onLongPress: onLongPress,
-            onSecondaryTap: Utils.isMobile ? null : onLongPress,
+            onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
             child: Stack(
               clipBehavior: Clip.none,
               children: [

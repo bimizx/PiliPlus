@@ -1,6 +1,6 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
@@ -12,7 +12,6 @@ import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -26,7 +25,7 @@ class ArticleListPage extends StatefulWidget {
 class _ArticleListPageState extends State<ArticleListPage> with GridMixin {
   final _controller = Get.put(
     ArticleListController(),
-    tag: Utils.generateRandomString(8),
+    tag: Get.parameters['id']!,
   );
 
   late EdgeInsets padding;
@@ -73,16 +72,16 @@ class _ArticleListPageState extends State<ArticleListPage> with GridMixin {
   ) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) =>
                     ArticleListItem(item: response[index]),
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),
@@ -118,7 +117,9 @@ class _ArticleListPageState extends State<ArticleListPage> with GridMixin {
                   width: 91,
                   height: 120,
                   src: item.imageUrl,
-                  radius: 6,
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(6),
+                  ),
                 ),
                 const SizedBox(width: 10),
               ],
@@ -137,9 +138,12 @@ class _ArticleListPageState extends State<ArticleListPage> with GridMixin {
                   if (_controller.author != null) ...[
                     const SizedBox(height: 10),
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () =>
                           Get.toNamed('/member?mid=${_controller.author!.mid}'),
                       child: Row(
+                        spacing: 10,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           NetworkImgLayer(
                             width: 30,
@@ -147,8 +151,7 @@ class _ArticleListPageState extends State<ArticleListPage> with GridMixin {
                             src: _controller.author!.face,
                             type: ImageType.avatar,
                           ),
-                          const SizedBox(width: 10),
-                          Text(_controller.author!.name!),
+                          Flexible(child: Text(_controller.author!.name!)),
                         ],
                       ),
                     ),

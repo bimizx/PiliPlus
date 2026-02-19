@@ -1,51 +1,53 @@
 import 'dart:async';
-import 'dart:math' show max;
 
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
 import 'package:PiliPlus/grpc/dyn.dart';
+import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/msg.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamic_badge_mode.dart';
 import 'package:PiliPlus/models/common/msg/msg_unread_type.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
-import 'package:PiliPlus/models_new/msgfeed_unread/data.dart';
-import 'package:PiliPlus/models_new/single_unread/data.dart';
 import 'package:PiliPlus/pages/dynamics/controller.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
 import 'package:PiliPlus/pages/mine/view.dart';
 import 'package:PiliPlus/services/account_service.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/update.dart';
+import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class MainController extends GetxController
-    with GetSingleTickerProviderStateMixin {
-  AccountService accountService = Get.find<AccountService>();
+    with GetSingleTickerProviderStateMixin, AccountMixin {
+  @override
+  final AccountService accountService = Get.find<AccountService>();
 
   List<NavigationBarType> navigationBars = <NavigationBarType>[];
 
-  StreamController<bool>? bottomBarStream;
-  late bool hideTabBar = Pref.hideTabBar;
+  RxDouble? barOffset;
+  RxBool? showBottomBar;
+  late final bool hideBottomBar;
+  late final barHideType = Pref.barHideType;
+  bool useBottomNav = false;
   late dynamic controller;
-  RxInt selectedIndex = 0.obs;
+  final RxInt selectedIndex = 0.obs;
 
-  RxInt dynCount = 0.obs;
+  final RxInt dynCount = 0.obs;
   late DynamicBadgeMode dynamicBadgeMode;
   late bool checkDynamic = Pref.checkDynamic;
   late int dynamicPeriod = Pref.dynamicPeriod * 60 * 1000;
   late int _lastCheckDynamicAt = 0;
   late bool hasDyn = false;
-  late final DynamicsController dynamicController = Get.put(
-    DynamicsController(),
-  );
+  late final dynamicController = Get.putOrFind(DynamicsController.new);
 
   late bool hasHome = false;
-  late final HomeController homeController = Get.put(HomeController());
+  late final homeController = Get.putOrFind(HomeController.new);
 
   late DynamicBadgeMode msgBadgeMode = Pref.msgBadgeMode;
   late Set<MsgUnReadType> msgUnReadTypes = Pref.msgUnReadTypeV2;
@@ -58,6 +60,7 @@ class MainController extends GetxController
   late final optTabletNav = Pref.optTabletNav;
 
   late bool directExitOnBack = Pref.directExitOnBack;
+  late bool showTrayIcon = Pref.showTrayIcon;
   late bool minimizeOnExit = Pref.minimizeOnExit;
   late bool pauseOnMinimize = Pref.pauseOnMinimize;
   late bool isPlaying = false;
@@ -82,10 +85,18 @@ class MainController extends GetxController
           )
         : PageController(initialPage: selectedIndex.value);
 
-    if (navigationBars.length > 1 && hideTabBar) {
-      bottomBarStream = StreamController<bool>.broadcast();
+    hideBottomBar =
+        !useSideBar && navigationBars.length > 1 && Pref.hideBottomBar;
+    if (hideBottomBar) {
+      switch (barHideType) {
+        case .instant:
+          showBottomBar = RxBool(true);
+        case .sync:
+          barOffset ??= RxDouble(0.0);
+      }
     }
-    dynamicBadgeMode = DynamicBadgeMode.values[Pref.dynamicBadgeMode];
+
+    dynamicBadgeMode = Pref.dynamicBadgeMode;
 
     hasDyn = navigationBars.contains(NavigationBarType.dynamics);
     if (dynamicBadgeMode != DynamicBadgeMode.hidden) {
@@ -108,15 +119,14 @@ class MainController extends GetxController
 
   Future<int> _msgUnread() async {
     if (msgUnReadTypes.contains(MsgUnReadType.pm)) {
-      var res = await MsgHttp.msgUnread();
-      if (res['status']) {
-        SingleUnreadData data = res['data'];
-        return data.followUnread +
-            data.unfollowUnread +
-            data.bizMsgFollowUnread +
-            data.bizMsgUnfollowUnread +
-            data.unfollowPushMsg +
-            data.customUnread;
+      final res = await MsgHttp.msgUnread();
+      if (res case Success(:final response)) {
+        return response.followUnread +
+            response.unfollowUnread +
+            response.bizMsgFollowUnread +
+            response.bizMsgUnfollowUnread +
+            response.unfollowPushMsg +
+            response.customUnread;
       }
     }
     return 0;
@@ -124,27 +134,26 @@ class MainController extends GetxController
 
   Future<int> _msgFeedUnread() async {
     int count = 0;
-    var remainTypes = Set<MsgUnReadType>.from(msgUnReadTypes)
+    final remainTypes = Set<MsgUnReadType>.from(msgUnReadTypes)
       ..remove(MsgUnReadType.pm);
     if (remainTypes.isNotEmpty) {
-      var res = await MsgHttp.msgFeedUnread();
-      if (res['status']) {
-        MsgFeedUnreadData data = res['data'];
-        for (var item in remainTypes) {
+      final res = await MsgHttp.msgFeedUnread();
+      if (res case Success(:final response)) {
+        for (final item in remainTypes) {
           switch (item) {
             case MsgUnReadType.pm:
               break;
             case MsgUnReadType.reply:
-              count += data.reply;
+              count += response.reply;
               break;
             case MsgUnReadType.at:
-              count += data.at;
+              count += response.at;
               break;
             case MsgUnReadType.like:
-              count += data.like;
+              count += response.like;
               break;
             case MsgUnReadType.sysMsg:
-              count += data.sysMsg;
+              count += response.sysMsg;
               break;
           }
         }
@@ -162,9 +171,9 @@ class MainController extends GetxController
       return;
     }
 
-    var res = await Future.wait([_msgUnread(), _msgFeedUnread()]);
+    final res = await Future.wait([_msgUnread(), _msgFeedUnread()]);
 
-    int count = res.fold(0, (prev, e) => prev + e);
+    final count = res.sum;
 
     final countStr = count == 0
         ? ''
@@ -213,7 +222,6 @@ class MainController extends GetxController
   void setNavBarConfig() {
     List<int>? navBarSort =
         (GStorage.setting.get(SettingBoxKey.navBarSort) as List?)?.fromCast();
-    int defaultHomePage = Pref.defaultHomePage;
     late final List<NavigationBarType> navigationBars;
     if (navBarSort == null || navBarSort.isEmpty) {
       navigationBars = NavigationBarType.values;
@@ -223,10 +231,7 @@ class MainController extends GetxController
           .toList();
     }
     this.navigationBars = navigationBars;
-    selectedIndex.value = max(
-      0,
-      navigationBars.indexWhere((e) => e.index == defaultHomePage),
-    );
+    selectedIndex.value = Pref.defaultHomePageIndex;
   }
 
   void checkDefaultSearch([bool shouldCheck = false]) {
@@ -270,7 +275,7 @@ class MainController extends GetxController
         const Material(
           child: ViewSafeArea(
             top: true,
-            child: MinePage(),
+            child: MinePage(showBackBtn: true),
           ),
         ),
       );
@@ -321,14 +326,23 @@ class MainController extends GetxController
 
   void setSearchBar() {
     if (hasHome) {
-      homeController.searchBarStream?.add(true);
+      homeController.showTopBar?.value = true;
     }
   }
 
   @override
   void onClose() {
-    bottomBarStream?.close();
+    barOffset?.close();
     controller.dispose();
     super.onClose();
+  }
+
+  @override
+  void onChangeAccount(bool isLogin) {
+    if (isLogin) {
+      getUnreadDynamic();
+    } else {
+      setDynCount();
+    }
   }
 }

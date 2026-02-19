@@ -5,6 +5,7 @@ import 'package:PiliPlus/http/api.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/models/common/home_tab_type.dart';
 import 'package:PiliPlus/pages/common/common_controller.dart';
+import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/services/account_service.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
@@ -19,12 +20,11 @@ class HomeController extends GetxController
   late List<HomeTabType> tabs;
   late TabController tabController;
 
-  StreamController<bool>? searchBarStream;
-  final bool hideSearchBar = Pref.hideSearchBar;
-  final bool useSideBar = Pref.useSideBar;
+  RxBool? showTopBar;
+  late final bool hideTopBar;
 
   bool enableSearchWord = Pref.enableSearchWord;
-  late RxString defaultSearch = ''.obs;
+  late final RxString defaultSearch = ''.obs;
   late int lateCheckSearchAt = 0;
 
   ScrollOrRefreshMixin get controller => tabs[tabController.index].ctr();
@@ -38,8 +38,15 @@ class HomeController extends GetxController
   void onInit() {
     super.onInit();
 
-    if (hideSearchBar) {
-      searchBarStream = StreamController<bool>.broadcast();
+    hideTopBar = !Pref.useSideBar && Pref.hideTopBar;
+    if (hideTopBar) {
+      final mainCtr = Get.find<MainController>();
+      switch (mainCtr.barHideType) {
+        case .instant:
+          showTopBar = RxBool(true);
+        case .sync:
+          mainCtr.barOffset ??= RxDouble(0.0);
+      }
     }
 
     if (enableSearchWord) {
@@ -80,7 +87,7 @@ class HomeController extends GetxController
 
   Future<void> querySearchDefault() async {
     try {
-      var res = await Request().get(
+      final res = await Request().get(
         Api.searchDefault,
         queryParameters: await WbiSign.makSign({'web_location': 333.1365}),
       );
@@ -89,11 +96,5 @@ class HomeController extends GetxController
         // defaultSearch.value = res.data['data']?['show_name'] ?? '';
       }
     } catch (_) {}
-  }
-
-  @override
-  void onClose() {
-    searchBarStream?.close();
-    super.onClose();
   }
 }

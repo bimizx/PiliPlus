@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:PiliPlus/common/constants.dart';
@@ -30,15 +29,16 @@ import 'package:PiliPlus/utils/app_sign.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:PiliPlus/utils/wbi_sign.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
-class MemberHttp {
-  static Future reportMember(
+abstract final class MemberHttp {
+  static Future<void> reportMember(
     dynamic mid, {
     String? reason,
     int? reasonV2,
   }) async {
-    var res = await Request().post(
-      HttpString.spaceBaseUrl + Api.reportMember,
+    final res = await Request().post(
+      Api.reportMember,
       data: {
         'mid': mid,
         'reason': reason,
@@ -47,10 +47,11 @@ class MemberHttp {
       },
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
-    return {
-      'status': res.data['status'],
-      'msg': res.data['message'] ?? res.data['data'],
-    };
+    if (res.data['status'] == true) {
+      SmartDialog.showToast('举报成功');
+    } else {
+      SmartDialog.showToast('举报失败');
+    }
   }
 
   static Future<LoadingState<SpaceArticleData>> spaceArticle({
@@ -70,7 +71,7 @@ class MemberHttp {
       'statistics': Constants.statisticsApp,
       'vmid': mid,
     };
-    var res = await Request().get(
+    final res = await Request().get(
       Api.spaceArticle,
       queryParameters: params,
       options: Options(
@@ -91,7 +92,7 @@ class MemberHttp {
     required int? mid,
     required int pn,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.seasonSeries,
       queryParameters: {
         'mid': mid,
@@ -141,7 +142,7 @@ class MemberHttp {
       'statistics': Constants.statisticsApp,
       'vmid': mid,
     };
-    var res = await Request().get(
+    final res = await Request().get(
       switch (type) {
         ContributeType.video => Api.spaceArchive,
         ContributeType.charging => Api.spaceChargingArchive,
@@ -169,7 +170,7 @@ class MemberHttp {
     required int page,
     required mid,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.spaceAudio,
       queryParameters: {
         'pn': page,
@@ -190,7 +191,7 @@ class MemberHttp {
     required int page,
     required mid,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.spaceCheese,
       queryParameters: {
         'pn': page,
@@ -206,48 +207,48 @@ class MemberHttp {
     }
   }
 
-  static Future<LoadingState> spaceStory({
-    required mid,
-    required aid,
-    required beforeSize,
-    required afterSize,
-    required cid,
-    required contain,
-    required index,
-  }) async {
-    final params = {
-      'aid': aid,
-      'before_size': beforeSize,
-      'after_size': afterSize,
-      'cid': cid,
-      'contain': contain,
-      'index': index,
-      'build': 8430300,
-      'version': '8.43.0',
-      'c_locale': 'zh_CN',
-      'channel': 'master',
-      'mobi_app': 'android',
-      'platform': 'android',
-      's_locale': 'zh_CN',
-      'statistics': Constants.statisticsApp,
-      'vmid': mid,
-    };
-    var res = await Request().get(
-      Api.spaceStory,
-      queryParameters: params,
-      options: Options(
-        headers: {
-          'bili-http-engine': 'cronet',
-          'user-agent': Constants.userAgentApp,
-        },
-      ),
-    );
-    if (res.data['code'] == 0) {
-      return Success(res.data['data']);
-    } else {
-      return Error(res.data['message']);
-    }
-  }
+  // static Future<LoadingState> spaceStory({
+  //   required Object mid,
+  //   required Object aid,
+  //   required Object beforeSize,
+  //   required Object afterSize,
+  //   required Object cid,
+  //   required Object contain,
+  //   required Object index,
+  // }) async {
+  //   final params = {
+  //     'aid': aid,
+  //     'before_size': beforeSize,
+  //     'after_size': afterSize,
+  //     'cid': cid,
+  //     'contain': contain,
+  //     'index': index,
+  //     'build': 8430300,
+  //     'version': '8.43.0',
+  //     'c_locale': 'zh_CN',
+  //     'channel': 'master',
+  //     'mobi_app': 'android',
+  //     'platform': 'android',
+  //     's_locale': 'zh_CN',
+  //     'statistics': Constants.statisticsApp,
+  //     'vmid': mid,
+  //   };
+  //   final res = await Request().get(
+  //     Api.spaceStory,
+  //     queryParameters: params,
+  //     options: Options(
+  //       headers: {
+  //         'bili-http-engine': 'cronet',
+  //         'user-agent': Constants.userAgentApp,
+  //       },
+  //     ),
+  //   );
+  //   if (res.data['code'] == 0) {
+  //     return Success(res.data['data']);
+  //   } else {
+  //     return Error(res.data['message']);
+  //   }
+  // }
 
   static Future<LoadingState<SpaceData>> space({
     int? mid,
@@ -265,7 +266,7 @@ class MemberHttp {
       'statistics': Constants.statisticsApp,
       'vmid': mid,
     };
-    var res = await Request().get(
+    final res = await Request().get(
       Api.space,
       queryParameters: params,
       options: Options(
@@ -282,8 +283,8 @@ class MemberHttp {
     }
   }
 
-  static Future memberInfo({
-    int? mid,
+  static Future<LoadingState<MemberInfoModel>> memberInfo({
+    required int mid,
     String token = '',
   }) async {
     String dmImgStr = Utils.base64EncodeRandomString(16, 64);
@@ -298,7 +299,7 @@ class MemberHttp {
       'dm_cover_img_str': dmCoverImgStr,
       'dm_img_inter': '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
     });
-    var res = await Request().get(
+    final res = await Request().get(
       Api.memberInfo,
       queryParameters: params,
       options: Options(
@@ -310,26 +311,28 @@ class MemberHttp {
       ),
     );
     if (res.data['code'] == 0) {
-      return {
-        'status': true,
-        'data': MemberInfoModel.fromJson(res.data['data']),
-      };
+      return Success(MemberInfoModel.fromJson(res.data['data']));
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
-  static Future memberStat({int? mid}) async {
-    var res = await Request().get(Api.userStat, queryParameters: {'vmid': mid});
+  static Future<LoadingState<Map>> memberStat({int? mid}) async {
+    final res = await Request().get(
+      Api.userStat,
+      queryParameters: {'vmid': mid},
+    );
     if (res.data['code'] == 0) {
-      return {'status': true, 'data': res.data['data']};
+      return Success(res.data['data']);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
-  static Future memberCardInfo({int? mid}) async {
-    var res = await Request().get(
+  static Future<LoadingState<MemberCardInfoData>> memberCardInfo({
+    int? mid,
+  }) async {
+    final res = await Request().get(
       Api.memberCardInfo,
       queryParameters: {
         'mid': mid,
@@ -337,17 +340,14 @@ class MemberHttp {
       },
     );
     if (res.data['code'] == 0) {
-      return {
-        'status': true,
-        'data': MemberCardInfoData.fromJson(res.data['data']),
-      };
+      return Success(MemberCardInfoData.fromJson(res.data['data']));
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
   static Future<LoadingState<SearchArchiveData>> searchArchive({
-    required mid,
+    required Object mid,
     int ps = 30,
     int tid = 0,
     int? pn,
@@ -361,7 +361,7 @@ class MemberHttp {
       'mid': mid,
       'ps': ps,
       'tid': tid,
-      'pn': pn,
+      'pn': ?pn,
       'keyword': ?keyword,
       'order': order,
       'platform': 'web',
@@ -372,7 +372,7 @@ class MemberHttp {
       'dm_cover_img_str': dmCoverImgStr,
       'dm_img_inter': '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
     });
-    var res = await Request().get(
+    final res = await Request().get(
       Api.searchArchive,
       queryParameters: params,
       options: Options(
@@ -394,9 +394,10 @@ class MemberHttp {
   }
 
   // 用户动态
+  @pragma('vm:notify-debugger-on-exception')
   static Future<LoadingState<DynamicsDataModel>> memberDynamic({
     String? offset,
-    int? mid,
+    required int mid,
   }) async {
     String dmImgStr = Utils.base64EncodeRandomString(16, 64);
     String dmCoverImgStr = Utils.base64EncodeRandomString(32, 128);
@@ -406,15 +407,25 @@ class MemberHttp {
       'timezone_offset': '-480',
       'features': 'itemOpusStyle,listOnlyfans',
       'platform': 'web',
-      'web_location': '333.999',
+      'web_location': '333.1387',
       'dm_img_list': '[]',
       'dm_img_str': dmImgStr,
       'dm_cover_img_str': dmCoverImgStr,
       'dm_img_inter': '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
-      'x-bili-device-req-json': jsonEncode({"platform": "web", "device": "pc"}),
-      'x-bili-web-req-json': jsonEncode({"spm_id": "333.999"}),
+      'x-bili-device-req-json':
+          '{"platform":"web","device":"pc","spmid":"333.1387"}',
     });
-    var res = await Request().get(Api.memberDynamic, queryParameters: params);
+    final res = await Request().get(
+      Api.memberDynamic,
+      queryParameters: params,
+      options: Options(
+        headers: {
+          'user-agent': UaType.pc.ua,
+          'origin': 'https://space.bilibili.com',
+          'referer': 'https://space.bilibili.com/$mid/dynamic',
+        },
+      ),
+    );
     if (res.data['code'] == 0) {
       try {
         DynamicsDataModel data = DynamicsDataModel.fromJson(res.data['data']);
@@ -422,8 +433,8 @@ class MemberHttp {
           return memberDynamic(offset: data.offset, mid: mid);
         }
         return Success(data);
-      } catch (err) {
-        return Error(err.toString());
+      } catch (e, s) {
+        return Error('$e\n\n$s');
       }
     } else {
       Map errMap = const {
@@ -439,7 +450,7 @@ class MemberHttp {
     required dynamic offset,
     required String keyword,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.dynSearch,
       queryParameters: {
         'host_mid': mid,
@@ -459,7 +470,7 @@ class MemberHttp {
 
   // 查询分组
   static Future<LoadingState<List<MemberTagItemModel>>> followUpTags() async {
-    var res = await Request().get(Api.followUpTag);
+    final res = await Request().get(Api.followUpTag);
     if (res.data['code'] == 0) {
       return Success(
         (res.data['data'] as List)
@@ -471,11 +482,11 @@ class MemberHttp {
     }
   }
 
-  static Future specialAction({
+  static Future<LoadingState<Null>> specialAction({
     int? fid,
     bool isAdd = true,
   }) async {
-    var res = await Request().post(
+    final res = await Request().post(
       isAdd ? Api.addSpecial : Api.delSpecial,
       data: {
         'fid': fid,
@@ -484,18 +495,15 @@ class MemberHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true};
+      return const Success(null);
     } else {
-      return {
-        'status': false,
-        'msg': res.data['message'],
-      };
+      return Error(res.data['message']);
     }
   }
 
   // 设置分组
-  static Future addUsers(String fids, String tagids) async {
-    var res = await Request().post(
+  static Future<LoadingState<Null>> addUsers(String fids, String tagids) async {
+    final res = await Request().post(
       Api.addUsers,
       queryParameters: {
         'x-bili-device-req-json':
@@ -510,9 +518,9 @@ class MemberHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true, 'msg': '操作成功'};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
@@ -523,7 +531,7 @@ class MemberHttp {
     int? pn,
     int ps = 20,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.followUpGroup,
       queryParameters: {
         'mid': mid,
@@ -547,8 +555,8 @@ class MemberHttp {
     }
   }
 
-  static Future createFollowTag(tagName) async {
-    var res = await Request().post(
+  static Future<LoadingState<Null>> createFollowTag(Object tagName) async {
+    final res = await Request().post(
       Api.createFollowTag,
       queryParameters: {
         'x-bili-device-req-json':
@@ -561,14 +569,17 @@ class MemberHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
-  static Future updateFollowTag(tagid, name) async {
-    var res = await Request().post(
+  static Future<LoadingState<Null>> updateFollowTag(
+    Object tagid,
+    Object name,
+  ) async {
+    final res = await Request().post(
       Api.updateFollowTag,
       queryParameters: {
         'x-bili-device-req-json':
@@ -582,14 +593,14 @@ class MemberHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
-  static Future delFollowTag(tagid) async {
-    var res = await Request().post(
+  static Future<LoadingState<Null>> delFollowTag(Object tagid) async {
+    final res = await Request().post(
       Api.delFollowTag,
       queryParameters: {
         'x-bili-device-req-json':
@@ -602,37 +613,36 @@ class MemberHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
   // 获取up置顶
-  static Future getTopVideo(String? vmid) async {
-    var res = await Request().get(Api.getTopVideoApi);
+  static Future<LoadingState<List<MemberTagItemModel>?>> getTopVideo() async {
+    final res = await Request().get(Api.getTopVideoApi);
     if (res.data['code'] == 0) {
-      return {
-        'status': true,
-        'data': res.data['data']
-            .map<MemberTagItemModel>((e) => MemberTagItemModel.fromJson(e))
+      return Success(
+        (res.data['data'] as List?)
+            ?.map<MemberTagItemModel>((e) => MemberTagItemModel.fromJson(e))
             .toList(),
-      };
+      );
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
   // 获取up播放数、点赞数
-  static Future memberView({required int mid}) async {
-    var res = await Request().get(
+  static Future<LoadingState<Map>> memberView({required int mid}) async {
+    final res = await Request().get(
       Api.getMemberViewApi,
       queryParameters: {'mid': mid},
     );
     if (res.data['code'] == 0) {
-      return {'status': true, 'data': res.data['data']};
+      return Success(res.data['data']);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
@@ -643,7 +653,7 @@ class MemberHttp {
     required int pn,
     required String name,
   }) async {
-    Map<String, dynamic> data = {
+    final data = {
       'vmid': mid,
       'pn': pn,
       'ps': ps,
@@ -654,7 +664,7 @@ class MemberHttp {
       'web_location': 333.999,
     };
     Map params = await WbiSign.makSign(data);
-    var res = await Request().get(
+    final res = await Request().get(
       Api.followSearch,
       queryParameters: {
         ...data,
@@ -675,7 +685,7 @@ class MemberHttp {
     String offset = '',
     String type = 'all',
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.spaceOpus,
       queryParameters: await WbiSign.makSign({
         'host_mid': hostMid,
@@ -693,11 +703,11 @@ class MemberHttp {
   }
 
   static Future<LoadingState<UpowerRankData>> upowerRank({
-    required upMid,
+    required Object upMid,
     required int page,
     int? privilegeType,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.upowerRank,
       queryParameters: {
         'up_mid': upMid,
@@ -720,7 +730,7 @@ class MemberHttp {
     required int mid,
     required int page,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.coinArc,
       queryParameters: {
         'pn': page,
@@ -739,7 +749,7 @@ class MemberHttp {
     required int mid,
     required int page,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.likeArc,
       queryParameters: {
         'pn': page,
@@ -766,7 +776,7 @@ class MemberHttp {
       'statistics': Constants.statisticsApp,
     };
     AppSign.appSign(params);
-    var res = await Request().post(
+    final res = await Request().post(
       Api.spaceShop,
       queryParameters: params,
       data: {

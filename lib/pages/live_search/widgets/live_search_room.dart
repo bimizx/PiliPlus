@@ -2,9 +2,8 @@ import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/image/image_save.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/models_new/live/live_search/room_item.dart';
-import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart';
 
 // 视频卡片 - 垂直布局
@@ -27,7 +26,7 @@ class LiveCardVSearch extends StatelessWidget {
       child: InkWell(
         onTap: () => PageUtils.toLiveRoom(item.roomid),
         onLongPress: onLongPress,
-        onSecondaryTap: Utils.isMobile ? null : onLongPress,
+        onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -44,7 +43,7 @@ class LiveCardVSearch extends StatelessWidget {
                         src: item.cover!,
                         width: maxWidth,
                         height: maxHeight,
-                        radius: 0,
+                        type: .emote,
                       ),
                       Positioned(
                         left: 0,
@@ -101,9 +100,9 @@ class LiveCardVSearch extends StatelessWidget {
             '${item.name}',
             style: const TextStyle(fontSize: 11, color: Colors.white),
           ),
-          if (item.watchedShow?.textSmall != null)
+          if (item.watchedShow?.textLarge case final textLarge?)
             Text(
-              '${NumUtils.numFormat(item.watchedShow!.textSmall)}围观',
+              textLarge,
               style: const TextStyle(fontSize: 11, color: Colors.white),
             ),
         ],

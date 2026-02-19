@@ -9,21 +9,19 @@ import 'package:PiliPlus/models_new/follow/data.dart';
 import 'package:PiliPlus/pages/common/common_controller.dart';
 import 'package:PiliPlus/pages/dynamics_tab/controller.dart';
 import 'package:PiliPlus/services/account_service.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class DynamicsController extends GetxController
-    with GetSingleTickerProviderStateMixin, ScrollOrRefreshMixin {
+    with GetSingleTickerProviderStateMixin, ScrollOrRefreshMixin, AccountMixin {
   @override
   final ScrollController scrollController = ScrollController();
-  late final TabController tabController = TabController(
-    length: DynamicsTabType.values.length,
-    vsync: this,
-    initialIndex: Pref.defaultDynamicType,
-  );
+  late final TabController tabController;
 
   late final RxInt mid = (-1).obs;
   late int currentMid = -1;
@@ -34,13 +32,14 @@ class DynamicsController extends GetxController
       LoadingState<FollowUpModel>.loading().obs;
   late int _upPage = 1;
   late bool _upEnd = false;
-  List<UpItem>? _cacheUpList;
+  Set<UpItem>? _cacheUpList;
   late final _showAllUp = Pref.dynamicsShowAllFollowedUp;
   late bool showLiveUp = Pref.expandDynLivePanel;
 
   final upPanelPosition = Pref.upPanelPosition;
 
-  AccountService accountService = Get.find<AccountService>();
+  @override
+  final AccountService accountService = Get.find<AccountService>();
 
   DynamicsTabController? get controller {
     try {
@@ -55,6 +54,11 @@ class DynamicsController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    tabController = TabController(
+      length: DynamicsTabType.values.length,
+      vsync: this,
+      initialIndex: Pref.defaultDynamicTypeIndex,
+    );
     queryFollowUp();
   }
 
@@ -72,15 +76,14 @@ class DynamicsController extends GetxController
 
     final res = await DynamicsHttp.dynUpList(upState.value.data.offset);
 
-    if (res.isSuccess) {
-      final data = res.data;
-      if (data.hasMore == false || data.offset.isNullOrEmpty) {
+    if (res case Success(:final response)) {
+      if (response.hasMore == false || response.offset.isNullOrEmpty) {
         _upEnd = true;
       }
       final upData = upState.value.data
-        ..hasMore = data.hasMore
-        ..offset = data.offset;
-      final list = data.upList;
+        ..hasMore = response.hasMore
+        ..offset = response.offset;
+      final list = response.upList;
       if (list != null && list.isNotEmpty) {
         upData.upList.addAll(list);
         upState.refresh();
@@ -95,15 +98,15 @@ class DynamicsController extends GetxController
     isQuerying = true;
 
     final res = await FollowHttp.followings(
-      vmid: accountService.mid,
+      vmid: Accounts.main.mid,
       pn: _upPage,
       orderType: 'attention',
       ps: 50,
     );
 
-    if (res.isSuccess) {
+    if (res case Success(:final response)) {
       _upPage++;
-      final list = res.data.list;
+      final list = response.list;
       if (list.isEmpty) {
         _upEnd = true;
       }
@@ -136,7 +139,7 @@ class DynamicsController extends GetxController
       DynamicsHttp.followUp(),
       if (_showAllUp)
         FollowHttp.followings(
-          vmid: accountService.mid,
+          vmid: Accounts.main.mid,
           pn: _upPage,
           orderType: 'attention',
           ps: 50,
@@ -144,11 +147,11 @@ class DynamicsController extends GetxController
     ]);
 
     final first = res.first;
-    if (first.isSuccess) {
-      FollowUpModel data = first.data as FollowUpModel;
-      final second = res.getOrNull(1);
-      if (second != null && second.isSuccess) {
-        FollowData data1 = second.data as FollowData;
+    if (first case final Success<FollowUpModel> i) {
+      final data = i.response;
+      final second = res.elementAtOrNull(1);
+      if (second case final Success<FollowData> j) {
+        final data1 = j.response;
         final list1 = data1.list;
 
         _upPage++;
@@ -157,8 +160,7 @@ class DynamicsController extends GetxController
         }
 
         final list = data.upList;
-        _cacheUpList = List<UpItem>.from(list);
-        list.addAll(list1..removeWhere(list.contains));
+        list.addAll(list1..removeWhere((_cacheUpList = list.toSet()).contains));
       }
       if (!_showAllUp) {
         if (data.hasMore == false || data.offset.isNullOrEmpty) {
@@ -188,13 +190,17 @@ class DynamicsController extends GetxController
   }
 
   @override
-  Future<void> onRefresh() async {
+  Future<void> onRefresh() {
+    _refreshFollowUp();
+    return controller!.onRefresh();
+  }
+
+  void _refreshFollowUp() {
     if (_showAllUp) {
       _upPage = 1;
       _cacheUpList = null;
     }
     queryFollowUp();
-    await controller?.onRefresh();
   }
 
   @override
@@ -231,4 +237,7 @@ class DynamicsController extends GetxController
     scrollController.dispose();
     super.onClose();
   }
+
+  @override
+  void onChangeAccount(bool isLogin) => _refreshFollowUp();
 }

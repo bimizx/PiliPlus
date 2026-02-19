@@ -1,5 +1,5 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/dynamics/result.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/dynamic_panel.dart';
@@ -79,8 +79,8 @@ class _MemberDynamicsPageState extends State<MemberDynamicsPage>
   Widget _buildContent(LoadingState<List<DynamicItemModel>?> loadingState) {
     return switch (loadingState) {
       Loading() => dynSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? GlobalData().dynamicsWaterfallFlow
                   ? SliverWaterfallFlow(
                       gridDelegate: dynGridDelegate,
@@ -96,7 +96,7 @@ class _MemberDynamicsPageState extends State<MemberDynamicsPage>
                             maxWidth: maxWidth,
                           );
                         },
-                        childCount: response!.length,
+                        childCount: response.length,
                       ),
                     )
                   : SliverList.builder(
@@ -111,10 +111,10 @@ class _MemberDynamicsPageState extends State<MemberDynamicsPage>
                           maxWidth: maxWidth,
                         );
                       },
-                      itemCount: response!.length,
+                      itemCount: response.length,
                     )
             : HttpError(onReload: _memberDynamicController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _memberDynamicController.onReload,
       ),

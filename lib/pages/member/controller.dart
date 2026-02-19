@@ -10,7 +10,7 @@ import 'package:PiliPlus/models_new/space/space/live.dart';
 import 'package:PiliPlus/models_new/space/space/setting.dart';
 import 'package:PiliPlus/models_new/space/space/tab2.dart';
 import 'package:PiliPlus/pages/common/common_data_controller.dart';
-import 'package:PiliPlus/services/account_service.dart';
+import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -26,7 +26,7 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
   int mid;
   String? username;
 
-  AccountService accountService = Get.find<AccountService>();
+  late final account = Accounts.main;
 
   Live? live;
   int? silence;
@@ -105,7 +105,7 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
         );
       }
     }
-    if (mid == accountService.mid) {
+    if (mid == account.mid) {
       spaceSetting = data.setting;
     }
     loadingState.value = response;
@@ -142,34 +142,32 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
   );
 
   void blockUser(BuildContext context) {
-    if (!accountService.isLogin.value) {
+    if (!account.isLogin) {
       SmartDialog.showToast('账号未登录');
       return;
     }
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('提示'),
-          content: Text(relation.value != 128 ? '确定拉黑UP主?' : '从黑名单移除UP主'),
-          actions: [
-            TextButton(
-              onPressed: Get.back,
-              child: Text(
-                '点错了',
-                style: TextStyle(color: Theme.of(context).colorScheme.outline),
-              ),
+      builder: (context) => AlertDialog(
+        title: const Text('提示'),
+        content: Text(relation.value != 128 ? '确定拉黑UP主?' : '从黑名单移除UP主'),
+        actions: [
+          TextButton(
+            onPressed: Get.back,
+            child: Text(
+              '点错了',
+              style: TextStyle(color: Theme.of(context).colorScheme.outline),
             ),
-            TextButton(
-              onPressed: () {
-                Get.back();
-                _onBlock();
-              },
-              child: const Text('确认'),
-            ),
-          ],
-        );
-      },
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              _onBlock();
+            },
+            child: const Text('确认'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -179,23 +177,23 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
 
   Future<void> _onBlock() async {
     final isBlocked = relation.value == 128;
-    var res = await VideoHttp.relationMod(
+    final res = await VideoHttp.relationMod(
       mid: mid,
       act: isBlocked ? 6 : 5,
       reSrc: 11,
     );
-    if (res['status']) {
+    if (res.isSuccess) {
       relation.value = isBlocked ? 0 : 128;
     }
   }
 
   void onFollow(BuildContext context) {
-    if (mid == accountService.mid) {
+    if (mid == account.mid) {
       Get.toNamed('/editProfile');
     } else if (relation.value == 128) {
       _onBlock();
     } else {
-      if (!accountService.isLogin.value) {
+      if (!account.isLogin) {
         SmartDialog.showToast('账号未登录');
         return;
       }
@@ -203,7 +201,7 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
         context: context,
         mid: mid,
         isFollow: isFollow,
-        callback: (attribute) => relation.value = attribute,
+        afterMod: (attribute) => relation.value = attribute,
       );
     }
   }
@@ -216,14 +214,14 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
 
   Future<void> onRemoveFan() async {
     final res = await VideoHttp.relationMod(mid: mid, act: 7, reSrc: 11);
-    if (res['status']) {
+    if (res.isSuccess) {
       isFollowed = null;
       if (relation.value == 4) {
         relation.value = 2;
       }
       SmartDialog.showToast('移除成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 
@@ -239,11 +237,11 @@ class MemberController extends CommonDataController<SpaceData, SpaceData?>
   }
 
   Future<void> vipExpAdd() async {
-    var res = await UserHttp.vipExpAdd();
-    if (res['status']) {
+    final res = await UserHttp.vipExpAdd();
+    if (res.isSuccess) {
       SmartDialog.showToast('领取成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 }

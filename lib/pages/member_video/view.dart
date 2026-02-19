@@ -1,6 +1,6 @@
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/member/contribute_type.dart';
@@ -10,7 +10,7 @@ import 'package:PiliPlus/pages/member_video/controller.dart';
 import 'package:PiliPlus/pages/member_video/widgets/video_card_h_member_video.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
@@ -44,18 +44,7 @@ class _MemberVideoState extends State<MemberVideo>
   @override
   bool get wantKeepAlive => true;
 
-  late final _controller = Get.put(
-    MemberVideoCtr(
-      type: widget.type,
-      mid: widget.mid,
-      seasonId: widget.seasonId,
-      seriesId: widget.seriesId,
-      username: Get.find<MemberController>(tag: widget.heroTag).username,
-      title: widget.title,
-    ),
-    tag:
-        '${widget.heroTag}${widget.type.name}${widget.seasonId}${widget.seriesId}',
-  );
+  late final MemberVideoCtr _controller;
 
   int? _index;
   late ExtendedNestedScrollController _scrollController;
@@ -72,6 +61,23 @@ class _MemberVideoState extends State<MemberVideo>
       _scrollController.jumpTo(scrollOffset);
       if (kDebugMode) debugPrint('jump error: $e');
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      MemberVideoCtr(
+        type: widget.type,
+        mid: widget.mid,
+        seasonId: widget.seasonId,
+        seriesId: widget.seriesId,
+        username: Get.find<MemberController>(tag: widget.heroTag).username,
+        title: widget.title,
+      ),
+      tag:
+          '${widget.heroTag}${widget.type.name}${widget.seasonId}${widget.seriesId}',
+    );
   }
 
   @override
@@ -119,7 +125,7 @@ class _MemberVideoState extends State<MemberVideo>
           Obx(
             () => !_controller.isLocating.value
                 ? Positioned(
-                    right: kFloatingActionButtonMargin + padding.right,
+                    right: kFloatingActionButtonMargin,
                     bottom: kFloatingActionButtonMargin + padding.bottom,
                     child: FloatingActionButton.extended(
                       onPressed: () {
@@ -163,8 +169,8 @@ class _MemberVideoState extends State<MemberVideo>
   ) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverMainAxisGroup(
                 slivers: [
                   SliverPersistentHeader(
@@ -267,12 +273,12 @@ class _MemberVideoState extends State<MemberVideo>
                         fromViewAid: _controller.fromViewAid,
                       );
                     },
-                    itemCount: response!.length,
+                    itemCount: response.length,
                   ),
                 ],
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

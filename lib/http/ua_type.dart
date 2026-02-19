@@ -1,4 +1,4 @@
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 
 enum UaType {
   mob(
@@ -6,9 +6,10 @@ enum UaType {
   ),
   pc(
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
-  );
+  )
+  ;
 
-  static UaType get platformUA => Utils.isMobile ? mob : pc;
+  static UaType get platformUA => PlatformUtils.isMobile ? mob : pc;
 
   final String ua;
   const UaType(this.ua);

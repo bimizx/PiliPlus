@@ -2,27 +2,35 @@ import 'dart:math' show min;
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/audio_video_progress_bar.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/progress_bar/segment_progress_bar.dart';
 import 'package:PiliPlus/grpc/bilibili/app/listener/v1.pb.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/pages/audio/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/widgets/action_item.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
+import 'package:PiliPlus/services/shutdown_timer_service.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
-import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart' hide DraggableScrollableSheet;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AudioPage extends StatefulWidget {
   const AudioPage({super.key});
@@ -39,6 +47,7 @@ class AudioPage extends StatefulWidget {
     String? heroTag,
     Duration? start,
     String? audioUrl,
+    int? extraId,
   }) => Get.toNamed(
     '/audio',
     arguments: {
@@ -50,8 +59,13 @@ class AudioPage extends StatefulWidget {
       'heroTag': ?heroTag,
       'start': ?start,
       'audioUrl': ?audioUrl,
+      'extraId': ?extraId,
     },
   );
+}
+
+extension _ListOrderExt on ListOrder {
+  String get title => const ['无序', '正序', '倒序', '随机'][value];
 }
 
 class _AudioPageState extends State<AudioPage> {
@@ -72,16 +86,55 @@ class _AudioPageState extends State<AudioPage> {
     final isPortrait = MediaQuery.sizeOf(context).isPortrait;
     final padding = MediaQuery.viewPaddingOf(context);
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        actions: _controller.isVideo
-            ? [
-                IconButton(
-                  onPressed: _showMore,
-                  icon: const Icon(Icons.more_vert),
-                ),
-                const SizedBox(width: 5),
-              ]
-            : null,
+        actions: [
+          if (_controller.isUgc && _controller.enableSponsorBlock)
+            Obx(() {
+              if (_controller.segmentProgressList.isNotEmpty) {
+                return IconButton(
+                  tooltip: '片段信息',
+                  onPressed: _controller.showSBDetail,
+                  icon: const Icon(MdiIcons.advertisements, size: 22),
+                );
+              }
+              return const SizedBox.shrink();
+            }),
+          Builder(
+            builder: (context) {
+              return PopupMenuButton<ListOrder>(
+                tooltip: '排序',
+                icon: const Icon(Icons.sort, size: 22),
+                initialValue: _controller.order,
+                onSelected: (value) {
+                  _controller.onChangeOrder(value);
+                  (context as Element).markNeedsBuild();
+                },
+                itemBuilder: (context) => ListOrder.values
+                    .map((e) => PopupMenuItem(value: e, child: Text(e.title)))
+                    .toList(),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: '定时关闭',
+            onPressed: () => shutdownTimerService
+              ..onPause ??= _controller.onPause
+              ..isPlaying ??= _controller.isPlaying
+              ..showScheduleExitDialog(
+                context,
+                isFullScreen: false,
+              ),
+            icon: const Icon(Icons.schedule, size: 22),
+          ),
+          if (_controller.isUgc)
+            IconButton(
+              tooltip: '更多',
+              onPressed: _showMore,
+              icon: const Icon(Icons.more_vert, size: 22),
+            ),
+          const SizedBox(width: 5),
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.only(
@@ -145,9 +198,11 @@ class _AudioPageState extends State<AudioPage> {
           maxWidth: min(640, context.mediaQueryShortestSide),
         ),
         builder: (context) {
-          final colorScheme = ColorScheme.of(context);
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
           return FractionallySizedBox(
-            heightFactor: !context.mediaQuerySize.isPortrait && Utils.isMobile
+            heightFactor:
+                PlatformUtils.isMobile && !context.mediaQuerySize.isPortrait
                 ? 1.0
                 : 0.7,
             alignment: Alignment.bottomCenter,
@@ -175,101 +230,199 @@ class _AudioPageState extends State<AudioPage> {
                 Expanded(
                   child: Material(
                     type: MaterialType.transparency,
-                    child: refreshIndicator(
-                      onRefresh: () => _controller.loadPrev(context),
-                      child: CustomScrollView(
-                        controller: scrollController,
-                        physics: _controller.reachStart
-                            ? const ClampingScrollPhysics()
-                            : const AlwaysScrollableScrollPhysics(
-                                parent: ClampingScrollPhysics(),
+                    child: Theme(
+                      data: theme.copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: refreshIndicator(
+                        onRefresh: () => _controller.loadPrev(context),
+                        child: CustomScrollView(
+                          controller: scrollController,
+                          physics: _controller.reachStart
+                              ? const ClampingScrollPhysics()
+                              : const AlwaysScrollableScrollPhysics(
+                                  parent: ClampingScrollPhysics(),
+                                ),
+                          slivers: [
+                            SliverPadding(
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    MediaQuery.paddingOf(context).bottom + 100,
                               ),
-                        slivers: [
-                          SliverPadding(
-                            padding: EdgeInsets.only(
-                              bottom:
-                                  MediaQuery.paddingOf(context).bottom + 100,
-                            ),
-                            sliver: SliverList.builder(
-                              itemCount: playlist.length,
-                              itemBuilder: (_, index) {
-                                if (index == playlist.length - 1) {
-                                  _controller.loadNext(context);
-                                }
-                                final isCurr = index == _controller.index;
-                                final item = playlist[index];
-                                return ListTile(
-                                  dense: true,
-                                  minTileHeight: 45,
-                                  onTap: () {
-                                    Get.back();
-                                    if (!isCurr) {
-                                      _controller.playIndex(index);
-                                    }
-                                  },
-                                  title: Text.rich(
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: isCurr
-                                        ? TextStyle(
-                                            height: 1,
-                                            fontSize: 14,
-                                            color: colorScheme.primary,
-                                            fontWeight: FontWeight.bold,
-                                          )
-                                        : const TextStyle(
-                                            height: 1,
-                                            fontSize: 14,
-                                          ),
-                                    strutStyle: const StrutStyle(
-                                      height: 1,
-                                      leading: 0,
-                                      fontSize: 14,
-                                    ),
-                                    TextSpan(
-                                      children: [
-                                        if (isCurr) ...[
-                                          WidgetSpan(
-                                            alignment:
-                                                PlaceholderAlignment.bottom,
-                                            child: Image.asset(
-                                              'assets/images/live.gif',
-                                              width: 16,
-                                              height: 16,
-                                              color: colorScheme.primary,
+                              sliver: SliverList.builder(
+                                itemCount: playlist.length,
+                                itemBuilder: (_, index) {
+                                  if (index == playlist.length - 1) {
+                                    _controller.loadNext(context);
+                                  }
+                                  final isCurr = index == _controller.index;
+                                  final item = playlist[index];
+                                  if (item.parts.length > 1) {
+                                    final subId = _controller.subId.firstOrNull;
+                                    return ExpansionTile(
+                                      dense: true,
+                                      minTileHeight: 45,
+                                      initiallyExpanded: isCurr,
+                                      collapsedIconColor: isCurr
+                                          ? colorScheme.primary
+                                          : null,
+                                      iconColor: isCurr
+                                          ? null
+                                          : colorScheme.onSurfaceVariant,
+                                      controlAffinity:
+                                          ListTileControlAffinity.leading,
+                                      title: Text(
+                                        item.arc.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: isCurr
+                                            ? TextStyle(
+                                                fontSize: 14,
+                                                color: colorScheme.primary,
+                                                fontWeight: FontWeight.bold,
+                                              )
+                                            : const TextStyle(fontSize: 14),
+                                      ),
+                                      trailing: isCurr
+                                          ? null
+                                          : iconButton(
+                                              icon: const Icon(Icons.clear),
+                                              onPressed: () {
+                                                if (index <
+                                                    _controller.index!) {
+                                                  _controller.index -= 1;
+                                                }
+                                                playlist.removeAt(index);
+                                                (context as Element)
+                                                    .markNeedsBuild();
+                                              },
+                                              iconColor: colorScheme.outline,
+                                              size: 28,
+                                              iconSize: 18,
+                                            ),
+                                      children: item.parts.map((e) {
+                                        final isCurr = e.subId == subId;
+                                        return ListTile(
+                                          dense: true,
+                                          minTileHeight: 45,
+                                          contentPadding:
+                                              const EdgeInsetsDirectional.only(
+                                                start: 56.0,
+                                                end: 24.0,
+                                              ),
+                                          onTap: () {
+                                            Get.back();
+                                            if (!isCurr) {
+                                              _controller.playIndex(
+                                                index,
+                                                subId: [e.subId],
+                                              );
+                                            }
+                                          },
+                                          title: Text.rich(
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: isCurr
+                                                ? TextStyle(
+                                                    fontSize: 14,
+                                                    color: colorScheme.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  )
+                                                : TextStyle(
+                                                    fontSize: 14,
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            TextSpan(
+                                              children: [
+                                                if (isCurr) ...[
+                                                  WidgetSpan(
+                                                    alignment: .bottom,
+                                                    child: Image.asset(
+                                                      'assets/images/live.gif',
+                                                      width: 16,
+                                                      height: 16,
+                                                      cacheWidth: 16.cacheSize(
+                                                        context,
+                                                      ),
+                                                      color:
+                                                          colorScheme.primary,
+                                                    ),
+                                                  ),
+                                                  const TextSpan(text: '  '),
+                                                ],
+                                                TextSpan(text: e.title),
+                                              ],
                                             ),
                                           ),
-                                          const TextSpan(text: '  '),
+                                        );
+                                      }).toList(),
+                                    );
+                                  }
+                                  return ListTile(
+                                    dense: true,
+                                    minTileHeight: 45,
+                                    onTap: () {
+                                      Get.back();
+                                      if (!isCurr) {
+                                        _controller.playIndex(index);
+                                      }
+                                    },
+                                    title: Text.rich(
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: isCurr
+                                          ? TextStyle(
+                                              fontSize: 14,
+                                              color: colorScheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            )
+                                          : const TextStyle(fontSize: 14),
+                                      TextSpan(
+                                        children: [
+                                          if (isCurr) ...[
+                                            WidgetSpan(
+                                              alignment: .bottom,
+                                              child: Image.asset(
+                                                'assets/images/live.gif',
+                                                width: 16,
+                                                height: 16,
+                                                cacheWidth: 16.cacheSize(
+                                                  context,
+                                                ),
+                                                color: colorScheme.primary,
+                                              ),
+                                            ),
+                                            const TextSpan(text: '  '),
+                                          ],
+                                          TextSpan(
+                                            text: item.arc.title,
+                                          ),
                                         ],
-                                        TextSpan(
-                                          text: item.arc.title,
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                  trailing: isCurr
-                                      ? null
-                                      : iconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () {
-                                            if (index < _controller.index!) {
-                                              _controller.index -= 1;
-                                            }
-                                            _controller.playlist!.removeAt(
-                                              index,
-                                            );
-                                            (context as Element)
-                                                .markNeedsBuild();
-                                          },
-                                          iconColor: colorScheme.outline,
-                                          size: 28,
-                                          iconSize: 18,
-                                        ),
-                                );
-                              },
+                                    trailing: isCurr
+                                        ? null
+                                        : iconButton(
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () {
+                                              if (index < _controller.index!) {
+                                                _controller.index -= 1;
+                                              }
+                                              playlist.removeAt(index);
+                                              (context as Element)
+                                                  .markNeedsBuild();
+                                            },
+                                            iconColor: colorScheme.outline,
+                                            size: 28,
+                                            iconSize: 18,
+                                          ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -373,7 +526,7 @@ class _AudioPageState extends State<AudioPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: PlayRepeat.values
-                        .sublist(0, 4)
+                        .take(4)
                         .map(
                           (e) => _playModeWidget(
                             colorScheme: colorScheme,
@@ -427,7 +580,7 @@ class _AudioPageState extends State<AudioPage> {
             ),
           ),
           Text(
-            playMode.desc,
+            playMode.label,
             style: TextStyle(fontSize: 13, color: color),
           ),
         ],
@@ -591,6 +744,22 @@ class _AudioPageState extends State<AudioPage> {
     );
   }
 
+  void _onDragStart(ThumbDragDetails details) {
+    // do nothing
+  }
+
+  void _onDragUpdate(ThumbDragDetails details) {
+    _controller
+      ..isDragging = true
+      ..position.value = details.timeStamp;
+  }
+
+  void _onSeek(Duration value) {
+    _controller
+      ..player?.platform?.seek(value)
+      ..isDragging = false;
+  }
+
   Widget _buildProgressBar(ColorScheme colorScheme) {
     final primary = colorScheme.primary;
     final thumbGlowColor = primary.withAlpha(80);
@@ -598,8 +767,8 @@ class _AudioPageState extends State<AudioPage> {
     final baseBarColor = colorScheme.brightness.isDark
         ? const Color(0x33FFFFFF)
         : const Color(0x33999999);
-    return Obx(() {
-      final child = ProgressBar(
+    Widget child = Obx(
+      () => ProgressBar(
         progress: _controller.position.value,
         total: _controller.duration.value,
         baseBarColor: baseBarColor,
@@ -609,26 +778,35 @@ class _AudioPageState extends State<AudioPage> {
         thumbGlowColor: thumbGlowColor,
         thumbGlowRadius: 0,
         thumbRadius: 6,
-        onDragStart: (_) {},
-        onDragUpdate: (details) {
-          _controller
-            ..isDragging = true
-            ..position.value = details.timeStamp;
-        },
-        onSeek: (value) {
-          _controller
-            ..player?.platform?.seek(value)
-            ..isDragging = false;
-        },
+        onDragStart: _onDragStart,
+        onDragUpdate: _onDragUpdate,
+        onSeek: _onSeek,
+      ),
+    );
+    if (_controller.isUgc && _controller.enableSponsorBlock) {
+      child = Stack(
+        children: [
+          child,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 3.5,
+            child: Obx(
+              () {
+                if (_controller.segmentProgressList.isNotEmpty) {
+                  return SegmentProgressBar(
+                    height: 5,
+                    segments: _controller.segmentProgressList,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
       );
-      if (Utils.isDesktop) {
-        return MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: child,
-        );
-      }
-      return child;
-    });
+    }
+    return child;
   }
 
   Widget _buildDuration(ColorScheme colorScheme) {
@@ -734,6 +912,7 @@ class _AudioPageState extends State<AudioPage> {
                             src: cover,
                             width: 170,
                             height: 170,
+                            cacheWidth: false,
                           ),
                         ),
                       ),
@@ -741,10 +920,8 @@ class _AudioPageState extends State<AudioPage> {
                     const SizedBox(height: 12),
                     SelectableText(
                       audioItem.arc.title,
-                      style: const TextStyle(
-                        height: 1.7,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(height: 1.7, fontSize: 16),
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
                     ),
                     const SizedBox(height: 12),
                     if (audioItem.owner.hasName()) ...[
@@ -791,7 +968,7 @@ class _AudioPageState extends State<AudioPage> {
                               TextSpan(
                                 text: audioItem.arc.displayedOid,
                                 style: TextStyle(color: colorScheme.secondary),
-                                recognizer: TapGestureRecognizer()
+                                recognizer: NoDeadlineTapGestureRecognizer()
                                   ..onTap = () => Utils.copyText(
                                     audioItem.arc.displayedOid,
                                   ),
@@ -807,7 +984,10 @@ class _AudioPageState extends State<AudioPage> {
                     ),
                     if (audioItem.arc.hasDesc()) ...[
                       const SizedBox(height: 10),
-                      SelectableText(audioItem.arc.desc),
+                      SelectableText(
+                        audioItem.arc.desc,
+                        scrollPhysics: const NeverScrollableScrollPhysics(),
+                      ),
                     ],
                   ],
                 ),

@@ -111,9 +111,9 @@ class _MemberPageState extends State<MemberPage> {
     ),
     PopupMenuButton(
       icon: const Icon(Icons.more_vert),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry>[
-        if (_userController.accountService.isLogin.value &&
-            _userController.accountService.mid != _mid) ...[
+      itemBuilder: (_) => <PopupMenuEntry>[
+        if (_userController.account.isLogin &&
+            _userController.account.mid != _mid) ...[
           PopupMenuItem(
             onTap: () => _userController.blockUser(context),
             child: Row(
@@ -148,7 +148,7 @@ class _MemberPageState extends State<MemberPage> {
               const Icon(Icons.share_outlined, size: 19),
               const SizedBox(width: 10),
               Text(
-                _userController.accountService.mid != _mid ? '分享UP主' : '分享我的主页',
+                _userController.account.mid != _mid ? '分享UP主' : '分享我的主页',
               ),
             ],
           ),
@@ -169,8 +169,8 @@ class _MemberPageState extends State<MemberPage> {
             ],
           ),
         ),
-        if (_userController.accountService.isLogin.value)
-          if (_userController.mid == _userController.accountService.mid) ...[
+        if (_userController.account.isLogin)
+          if (_userController.mid == _userController.account.mid) ...[
             if ((_userController
                         .loadingState
                         .value
@@ -326,7 +326,7 @@ class _MemberPageState extends State<MemberPage> {
     switch (userState) {
       case Loading():
         return const CircularProgressIndicator();
-      case Success<SpaceData?>(:var response):
+      case Success<SpaceData?>(:final response):
         if (response != null) {
           return DynamicSliverAppBarMedium(
             pinned: true,
@@ -334,8 +334,7 @@ class _MemberPageState extends State<MemberPage> {
             title: Text(_userController.username ?? ''),
             flexibleSpace: Obx(
               () => UserInfoCard(
-                isOwner:
-                    _userController.mid == _userController.accountService.mid,
+                isOwner: _userController.mid == _userController.account.mid,
                 relation: _userController.relation.value,
                 card: response.card!,
                 images: response.images!,
@@ -355,7 +354,7 @@ class _MemberPageState extends State<MemberPage> {
             child: Text(_userController.username ?? ''),
           ),
         );
-      case Error(:var errMsg):
+      case Error(:final errMsg):
         return scrollErrorWidget(
           errMsg: errMsg,
           onReload: _userController.onReload,

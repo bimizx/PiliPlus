@@ -5,7 +5,8 @@ import 'package:PiliPlus/models/member/info.dart';
 import 'package:PiliPlus/models_new/space/space_archive/data.dart';
 import 'package:PiliPlus/models_new/space/space_archive/item.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:get/get.dart';
 
 class HorizontalMemberPageController
@@ -14,9 +15,9 @@ class HorizontalMemberPageController
 
   dynamic mid;
 
-  Rx<LoadingState<MemberInfoModel>> userState =
+  final Rx<LoadingState<MemberInfoModel>> userState =
       LoadingState<MemberInfoModel>.loading().obs;
-  RxMap userStat = {}.obs;
+  final RxMap userStat = {}.obs;
 
   @override
   void onInit() {
@@ -26,27 +27,28 @@ class HorizontalMemberPageController
   }
 
   Future<void> getUserInfo() async {
-    var res = await MemberHttp.memberInfo(mid: mid);
-    if (res['status']) {
-      userState.value = Success(res['data']);
+    final res = await MemberHttp.memberInfo(mid: mid);
+    userState.value = res;
+    if (res.isSuccess) {
       getMemberStat();
-    } else {
-      userState.value = Error(res['msg']);
-    }
-  }
-
-  Future<void> getMemberStat() async {
-    var res = await MemberHttp.memberStat(mid: mid);
-    if (res['status']) {
-      userStat.value = res['data'];
       getMemberView();
     }
   }
 
+  Future<void> getMemberStat() async {
+    final res = await MemberHttp.memberStat(mid: mid);
+    if (res case Success(:final response)) {
+      userStat.addAll(response);
+    }
+  }
+
   Future<void> getMemberView() async {
-    var res = await MemberHttp.memberView(mid: mid);
-    if (res['status']) {
-      userStat.addAll(res['data']);
+    if (!Accounts.main.isLogin) {
+      return;
+    }
+    final res = await MemberHttp.memberView(mid: mid);
+    if (res case Success(:final response)) {
+      userStat.addAll(response);
     }
   }
 
@@ -61,12 +63,14 @@ class HorizontalMemberPageController
         hasNext = data.hasNext ?? false;
       }
     }
-    if (isLoadPrevious && loadingState.value.isSuccess) {
-      data.item ??= <SpaceArchiveItem>[];
-      data.item!.addAll(loadingState.value.data!);
-    } else if (!isRefresh && loadingState.value.isSuccess) {
-      data.item ??= <SpaceArchiveItem>[];
-      data.item!.insertAll(0, loadingState.value.data!);
+    if (isLoadPrevious) {
+      if (loadingState.value case Success(:final response)) {
+        (data.item ??= <SpaceArchiveItem>[]).addAll(response!);
+      }
+    } else if (!isRefresh) {
+      if (loadingState.value case Success(:final response)) {
+        (data.item ??= <SpaceArchiveItem>[]).insertAll(0, response!);
+      }
     }
     firstAid = data.item?.firstOrNull?.param;
     lastAid = data.item?.lastOrNull?.param;
@@ -107,7 +111,7 @@ class HorizontalMemberPageController
   @override
   Future<void> onRefresh() {
     if (!hasPrev) {
-      return Future.value();
+      return Future.syncValue(null);
     }
     isLoadPrevious = true;
     return queryData();

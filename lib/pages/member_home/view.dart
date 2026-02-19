@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/button/more_btn.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space/data.dart';
@@ -15,11 +16,11 @@ import 'package:PiliPlus/pages/member_home/widgets/fav_item.dart';
 import 'package:PiliPlus/pages/member_home/widgets/video_card_v_member_home.dart';
 import 'package:PiliPlus/pages/member_like_arc/view.dart';
 import 'package:PiliPlus/pages/member_pgc/widgets/pgc_card_v_member_pgc.dart';
-import 'package:PiliPlus/utils/context_ext.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 
 class MemberHome extends StatefulWidget {
   const MemberHome({super.key, this.heroTag});
@@ -180,14 +181,13 @@ class _MemberHomeState extends State<MemberHome>
                       param1: 'opus',
                       count: res.article!.count!,
                     ),
-                    SliverGrid.builder(
-                      gridDelegate: gridDelegate,
-                      itemBuilder: (context, index) {
-                        return MemberArticleItem(
-                          item: res.article!.item![index],
-                        );
-                      },
-                      itemCount: isVertical ? 1 : res.article!.item!.length,
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 98,
+                        child: MemberArticleItem(
+                          item: res.article!.item!.first,
+                        ),
+                      ),
                     ),
                   ],
                   if (res.audios?.item?.isNotEmpty == true) ...[
@@ -205,7 +205,7 @@ class _MemberHomeState extends State<MemberHome>
                           item: res.audios!.item![index],
                         );
                       },
-                      itemCount: isVertical ? 1 : min(2, res.audios!.count!),
+                      itemCount: isVertical ? 1 : min(3, res.audios!.count!),
                     ),
                   ],
                   if (res.comic?.item?.isNotEmpty == true) ...[
@@ -221,7 +221,7 @@ class _MemberHomeState extends State<MemberHome>
                       itemBuilder: (context, index) {
                         return MemberComicItem(item: res.comic!.item![index]);
                       },
-                      itemCount: isVertical ? 1 : min(2, res.comic!.count!),
+                      itemCount: isVertical ? 1 : min(3, res.comic!.count!),
                     ),
                   ],
                   if (res.season?.item?.isNotEmpty == true) ...[
@@ -258,7 +258,7 @@ class _MemberHomeState extends State<MemberHome>
                 ],
               )
             : scrollErrorWidget(),
-      Error(:var errMsg) => scrollErrorWidget(errMsg: errMsg),
+      Error(:final errMsg) => scrollErrorWidget(errMsg: errMsg),
     };
   }
 
@@ -290,9 +290,7 @@ class _MemberHomeState extends State<MemberHome>
                       child: Padding(
                         padding: const EdgeInsets.only(left: 10),
                         child: Icon(
-                          visible == true
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                          visible ? Icons.visibility : Icons.visibility_off,
                           size: 17,
                           color: color,
                         ),
@@ -301,7 +299,7 @@ class _MemberHomeState extends State<MemberHome>
                 ],
               ),
             ),
-            GestureDetector(
+            moreTextButton(
               onTap: () {
                 int index = _ctr.tab2!.indexWhere(
                   (item) => item.param == param,
@@ -361,25 +359,7 @@ class _MemberHomeState extends State<MemberHome>
                   SmartDialog.showToast('view $param');
                 }
               },
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '查看更多',
-                      style: TextStyle(color: color),
-                    ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 14,
-                        color: color,
-                      ),
-                      style: TextStyle(fontSize: 13, color: color),
-                    ),
-                  ],
-                ),
-              ),
+              color: color,
             ),
           ],
         ),

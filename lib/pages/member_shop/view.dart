@@ -1,12 +1,11 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/skeleton/space_opus.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space_shop/item.dart';
 import 'package:PiliPlus/pages/member_shop/controller.dart';
 import 'package:PiliPlus/pages/member_shop/widgets/item.dart';
-import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/waterfall.dart';
 import 'package:flutter/material.dart';
@@ -30,10 +29,16 @@ class MemberShop extends StatefulWidget {
 
 class _MemberShopState extends State<MemberShop>
     with AutomaticKeepAliveClientMixin {
-  late final _controller = Get.put(
-    MemberShopController(widget.mid),
-    tag: widget.heroTag,
-  );
+  late final MemberShopController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      MemberShopController(widget.mid),
+      tag: widget.heroTag,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +71,7 @@ class _MemberShopState extends State<MemberShop>
     maxCrossAxisExtent: Grid.smallCardWidth,
     mainAxisSpacing: StyleString.safeSpace,
     crossAxisSpacing: StyleString.safeSpace,
-    callback: (value) => _maxWidth = value,
+    afterCalc: (value) => _maxWidth = value,
   );
 
   Widget _buildBody(LoadingState<List<SpaceShopItem>?> loadingState) {
@@ -79,8 +84,8 @@ class _MemberShopState extends State<MemberShop>
             childCount: 10,
           ),
         );
-      case Success(:var response):
-        if (response.isNullOrEmpty) {
+      case Success(:final response):
+        if (response == null || response.isEmpty) {
           return HttpError(onReload: _controller.onReload);
         }
         Widget sliver = SliverWaterfallFlow(
@@ -92,7 +97,7 @@ class _MemberShopState extends State<MemberShop>
                 maxWidth: _maxWidth,
               );
             },
-            childCount: response!.length,
+            childCount: response.length,
           ),
         );
         if (_controller.showMoreTab == true) {
@@ -129,7 +134,7 @@ class _MemberShopState extends State<MemberShop>
           );
         }
         return sliver;
-      case Error(:var errMsg):
+      case Error(:final errMsg):
         return HttpError(
           errMsg: errMsg,
           onReload: _controller.onReload,

@@ -1,5 +1,5 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/video_card/video_card_h.dart';
 import 'package:PiliPlus/common/widgets/view_sliver_safe_area.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -45,7 +45,7 @@ class _PopularPreciousPageState extends State<PopularPreciousPage>
     switch (value) {
       case Loading():
         return gridSkeleton;
-      case Success<List<HotVideoItemModel>?>(:var response):
+      case Success<List<HotVideoItemModel>?>(:final response):
         return SliverGrid.builder(
           gridDelegate: gridDelegate,
           itemCount: response!.length,
@@ -70,7 +70,7 @@ class _PopularPreciousPageState extends State<PopularPreciousPage>
             );
           },
         );
-      case Error(:var errMsg):
+      case Error(:final errMsg):
         return HttpError(
           errMsg: errMsg,
           onReload: _controller.onReload,

@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/skeleton/video_reply.dart';
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
 import 'package:PiliPlus/grpc/bilibili/main/community/reply/v1.pb.dart'
     show ReplyInfo;
@@ -9,6 +9,7 @@ import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/main_reply/controller.dart';
 import 'package:PiliPlus/pages/video/reply/widgets/reply_item_grpc.dart';
 import 'package:PiliPlus/pages/video/reply_reply/view.dart';
+import 'package:PiliPlus/utils/extension/widget_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -55,9 +56,8 @@ class _MainReplyPageState extends State<MainReplyPage> {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('查看评论'),
-      ),
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(title: const Text('查看评论')),
       body: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
           final direction = notification.direction;
@@ -76,6 +76,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
               right: padding.right,
             ),
             child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 buildReplyHeader(colorScheme),
                 Obx(
@@ -84,7 +85,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
               ],
             ),
           ),
-        ),
+        ).constraintWidth(),
       ),
       floatingActionButton: SlideTransition(
         position: _controller.fabAnim,
@@ -94,7 +95,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
             try {
               feedBack();
               _controller.onReply(
-                context,
+                null,
                 oid: _controller.oid,
                 replyType: _controller.replyType,
               );
@@ -117,10 +118,10 @@ class _MainReplyPageState extends State<MainReplyPage> {
         itemBuilder: (_, _) => const VideoReplySkeleton(),
         prototypeItem: const VideoReplySkeleton(),
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverList.builder(
-                itemCount: response!.length + 1,
+                itemCount: response.length + 1,
                 itemBuilder: (context, index) {
                   if (index == response.length) {
                     _controller.onLoadMore();
@@ -142,10 +143,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
                       replyLevel: 1,
                       replyReply: (replyItem, id) =>
                           replyReply(context, replyItem, id, colorScheme),
-                      onReply: (replyItem) => _controller.onReply(
-                        context,
-                        replyItem: replyItem,
-                      ),
+                      onReply: _controller.onReply,
                       onDelete: (item, subIndex) =>
                           _controller.onRemove(index, item, subIndex),
                       upMid: _controller.upMid,
@@ -247,7 +245,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
               replyType: _controller.replyType,
               firstFloor: replyItem,
             ),
-          ),
+          ).constraintWidth(),
         ),
         routeName: 'dynamicDetail-Copy',
       );

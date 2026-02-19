@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/skeleton/video_card_v.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/self_sized_horizontal_list.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/live/live_feed_index/card_data_list_item.dart';
@@ -28,10 +28,16 @@ class LiveAreaChildPage extends StatefulWidget {
 
 class _LiveAreaChildPageState extends State<LiveAreaChildPage>
     with AutomaticKeepAliveClientMixin {
-  late final _controller = Get.put(
-    LiveAreaChildController(widget.areaId, widget.parentAreaId),
-    tag: '${widget.areaId}${widget.parentAreaId}',
-  );
+  late final LiveAreaChildController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      LiveAreaChildController(widget.areaId, widget.parentAreaId),
+      tag: '${widget.areaId}${widget.parentAreaId}',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,47 +83,37 @@ class _LiveAreaChildPageState extends State<LiveAreaChildPage>
         itemBuilder: (context, index) => const VideoCardVSkeleton(),
         itemCount: 10,
       ),
-      Success(:var response) => SliverMainAxisGroup(
+      Success(:final response) => SliverMainAxisGroup(
         slivers: [
           if (_controller.newTags?.isNotEmpty == true)
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SelfSizedHorizontalList(
-                  gapSize: 12,
-                  childBuilder: (index) {
-                    late final item = _controller.newTags![index];
-                    return Obx(
-                      () {
-                        final isCurr = index == _controller.tagIndex.value;
-                        return SearchText(
-                          fontSize: 14,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          text: '${item.name}',
-                          bgColor: isCurr
-                              ? theme.colorScheme.secondaryContainer
-                              : Colors.transparent,
-                          textColor: isCurr
-                              ? theme.colorScheme.onSecondaryContainer
-                              : null,
-                          onTap: (value) {
-                            _controller.onSelectTag(
-                              index,
-                              item.sortType,
-                            );
-                          },
-                        );
-                      },
+              child: Obx(() {
+                final tagIndex = _controller.tagIndex.value;
+                return SelfSizedHorizontalList(
+                  padding: const .only(bottom: 12),
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final item = _controller.newTags![index];
+                    final isCurr = index == tagIndex;
+                    return SearchText(
+                      fontSize: 14,
+                      padding: const .symmetric(horizontal: 8, vertical: 3),
+                      text: item.name!,
+                      bgColor: isCurr
+                          ? theme.colorScheme.secondaryContainer
+                          : Colors.transparent,
+                      textColor: isCurr
+                          ? theme.colorScheme.onSecondaryContainer
+                          : null,
+                      onTap: (value) =>
+                          _controller.onSelectTag(index, item.sortType),
                     );
                   },
                   itemCount: _controller.newTags!.length,
-                ),
-              ),
+                );
+              }),
             ),
-          response?.isNotEmpty == true
+          response != null && response.isNotEmpty
               ? SliverGrid.builder(
                   gridDelegate: gridDelegate,
                   itemBuilder: (context, index) {
@@ -126,12 +122,12 @@ class _LiveAreaChildPageState extends State<LiveAreaChildPage>
                     }
                     return LiveCardVApp(item: response[index]);
                   },
-                  itemCount: response!.length,
+                  itemCount: response.length,
                 )
               : HttpError(onReload: _controller.onReload),
         ],
       ),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

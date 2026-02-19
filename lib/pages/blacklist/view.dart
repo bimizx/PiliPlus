@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/skeleton/msg_feed_top.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/models_new/blacklist/list.dart';
@@ -24,12 +24,8 @@ class _BlackListPageState extends State<BlackListPage> {
 
   @override
   void dispose() {
-    if (_blackListController.loadingState.value.isSuccess) {
-      final blackMids =
-          _blackListController.loadingState.value.data
-              ?.map((e) => e.mid!)
-              .toSet() ??
-          {};
+    if (_blackListController.loadingState.value case Success(:final response)) {
+      final blackMids = response?.map((e) => e.mid!).toSet() ?? {};
       GlobalData().blackMids = blackMids;
       Pref.blackMids = blackMids;
     }
@@ -74,16 +70,17 @@ class _BlackListPageState extends State<BlackListPage> {
         itemCount: 12,
         itemBuilder: (context, index) => const MsgFeedTopSkeleton(),
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverList.builder(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (BuildContext context, int index) {
                   if (index == response.length - 1) {
                     _blackListController.onLoadMore();
                   }
                   final item = response[index];
                   return ListTile(
+                    visualDensity: .standard,
                     onTap: () => Get.toNamed('/member?mid=${item.mid}'),
                     leading: NetworkImgLayer(
                       width: 45,
@@ -117,7 +114,7 @@ class _BlackListPageState extends State<BlackListPage> {
                 },
               )
             : HttpError(onReload: _blackListController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _blackListController.onReload,
       ),

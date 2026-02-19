@@ -28,9 +28,15 @@ class LiveAreaDetailPage extends StatefulWidget {
 }
 
 class _LiveAreaDetailPageState extends State<LiveAreaDetailPage> {
-  late final _controller = Get.put(
-    LiveAreaDatailController(widget.areaId?.toString(), widget.parentAreaId),
-  );
+  late final LiveAreaDetailController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      LiveAreaDetailController(widget.areaId?.toString(), widget.parentAreaId),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,11 +71,11 @@ class _LiveAreaDetailPageState extends State<LiveAreaDetailPage> {
   ) {
     return switch (loadingState) {
       Loading() => const SizedBox.shrink(),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? DefaultTabController(
                 initialIndex: _controller.initialIndex,
-                length: response!.length,
+                length: response.length,
                 child: Builder(
                   builder: (context) {
                     return Column(

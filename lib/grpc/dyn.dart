@@ -7,7 +7,7 @@ import 'package:PiliPlus/grpc/url.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:fixnum/fixnum.dart';
 
-class DynGrpc {
+abstract final class DynGrpc {
   // static Future dynSpace({
   //   required int uid,
   //   required int page,
@@ -36,7 +36,7 @@ class DynGrpc {
   static Future<LoadingState<OpusDetailResp>> opusDetail({
     OpusType? opusType,
     required int oid,
-  }) async {
+  }) {
     return GrpcReq.request(
       GrpcUrl.opusDetail,
       OpusDetailReq(

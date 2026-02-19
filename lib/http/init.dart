@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:PiliPlus/http/api.dart';
 import 'package:PiliPlus/http/constants.dart';
+import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/retry_interceptor.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/utils/accounts.dart';
@@ -22,7 +23,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 
 class Request {
   static const _gzipDecoder = GZipDecoder();
-  static const _brotilDecoder = BrotliDecoder();
+  static const _brotliDecoder = BrotliDecoder();
 
   static final Request _instance = Request._internal();
   static late AccountManager accountManager;
@@ -48,30 +49,35 @@ class Request {
 
   static Future<void> setCoin() async {
     final res = await UserHttp.getCoin();
-    if (res['status']) {
-      GlobalData().coins = res['data'];
+    if (res case Success(:final response)) {
+      GlobalData().coins = response;
     }
   }
 
   static Future<void> buvidActive(Account account) async {
     // 这样线程不安全, 但仍按预期进行
-    if (account.activited) return;
-    account.activited = true;
+    if (account.activated) return;
+    account.activated = true;
     try {
       // final html = await Request().get(Api.dynamicSpmPrefix,
       //     options: Options(extra: {'account': account}));
       // final String spmPrefix = _spmPrefixExp.firstMatch(html.data)!.group(1)!;
-      final String randPngEnd = base64.encode(
-        List<int>.generate(32, (_) => Utils.random.nextInt(256)) +
-            List<int>.filled(4, 0) +
-            [73, 69, 78, 68] +
-            List<int>.generate(4, (_) => Utils.random.nextInt(256)),
-      );
+      final String randPngEnd = base64.encode([
+        ...Iterable<int>.generate(32, (_) => Utils.random.nextInt(256)),
+        0,
+        0,
+        0,
+        0,
+        73,
+        69,
+        78,
+        68,
+        ...Iterable<int>.generate(4, (_) => Utils.random.nextInt(256)),
+      ]);
 
-      String jsonData = json.encode({
+      final jsonData = json.encode({
         '3064': 1,
-        '39c8':
-            '${account is AnonymousAccount ? '333.1365' : '333.788'}.fp.risk',
+        '39c8': '333.1387.fp.risk',
         '3c43': {
           'adca': 'Linux',
           'bfe9': randPngEnd.substring(randPngEnd.length - 50),
@@ -81,7 +87,10 @@ class Request {
       await Request().post(
         Api.activateBuvidApi,
         data: {'payload': jsonData},
-        options: Options(contentType: Headers.jsonContentType),
+        options: Options(
+          extra: {'account': account},
+          contentType: Headers.jsonContentType,
+        ),
       );
     } catch (_) {}
   }
@@ -90,6 +99,7 @@ class Request {
    * config it and create
    */
   Request._internal() {
+    final enableHttp2 = Pref.enableHttp2;
     //BaseOptions、Options、RequestOptions 都可以配置参数，优先级别依次递增，且可以根据优先级别覆盖参数
     BaseOptions options = BaseOptions(
       //请求基地址,可以包含子路径
@@ -101,8 +111,10 @@ class Request {
       //Http请求头.
       headers: {
         'user-agent': 'Dart/3.6 (dart:io)', // Http2Adapter不会自动添加标头
+        if (!enableHttp2) 'connection': 'keep-alive',
+        'accept-encoding': 'br,gzip',
       },
-      responseDecoder: responseDecoder, // Http2Adapter没有自动解压
+      responseDecoder: _responseDecoder, // Http2Adapter没有自动解压
       persistentConnection: true,
     );
 
@@ -123,31 +135,25 @@ class Request {
               ..idleTimeout = const Duration(seconds: 15)
               ..autoUncompress = false
               ..findProxy = ((_) => 'PROXY $systemProxyHost:$systemProxyPort')
-              ..badCertificateCallback =
-                  (X509Certificate cert, String host, int port) => true
+              ..badCertificateCallback = (cert, host, port) => true
           : () => HttpClient()
               ..idleTimeout = const Duration(seconds: 15)
               ..autoUncompress = false, // Http2Adapter没有自动解压, 统一行为
     );
 
-    late final Uri proxy;
-    if (enableSystemProxy) {
-      proxy = Uri(
-        scheme: 'http',
-        host: systemProxyHost,
-        port: systemProxyPort,
-      );
-    }
-
     dio = Dio(options)
-      ..httpClientAdapter = Pref.enableHttp2
+      ..httpClientAdapter = enableHttp2
           ? Http2Adapter(
               ConnectionManager(
                 idleTimeout: const Duration(seconds: 15),
                 onClientCreate: enableSystemProxy
                     ? (_, config) {
                         config
-                          ..proxy = proxy
+                          ..proxy = Uri(
+                            scheme: 'http',
+                            host: systemProxyHost,
+                            port: systemProxyPort,
+                          )
                           ..onBadCertificate = (_) => true;
                       }
                     : Pref.badCertificateCallback
@@ -174,10 +180,11 @@ class Request {
       );
     }
 
-    dio.transformer = BackgroundTransformer();
-    dio.options.validateStatus = (int? status) {
-      return status! >= 200 && status < 300;
-    };
+    dio
+      ..transformer = BackgroundTransformer()
+      ..options.validateStatus = (int? status) {
+        return status != null && status >= 200 && status < 300;
+      };
   }
 
   /*
@@ -269,24 +276,21 @@ class Request {
     }
   }
 
-  static String responseDecoder(
+  static List<int> responseBytesDecoder(
+    List<int> responseBytes,
+    Map<String, List<String>> headers,
+  ) => switch (headers['content-encoding']?.firstOrNull) {
+    'gzip' => _gzipDecoder.decodeBytes(responseBytes),
+    'br' => _brotliDecoder.convert(responseBytes),
+    _ => responseBytes,
+  };
+
+  static String _responseDecoder(
     List<int> responseBytes,
     RequestOptions options,
     ResponseBody responseBody,
-  ) {
-    switch (responseBody.headers['content-encoding']?.firstOrNull) {
-      case 'gzip':
-        return utf8.decode(
-          _gzipDecoder.decodeBytes(responseBytes),
-          allowMalformed: true,
-        );
-      case 'br':
-        return utf8.decode(
-          _brotilDecoder.convert(responseBytes),
-          allowMalformed: true,
-        );
-      default:
-        return utf8.decode(responseBytes, allowMalformed: true);
-    }
-  }
+  ) => utf8.decode(
+    responseBytesDecoder(responseBytes, responseBody.headers),
+    allowMalformed: true,
+  );
 }

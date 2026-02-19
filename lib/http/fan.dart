@@ -1,16 +1,16 @@
 import 'package:PiliPlus/http/api.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/loading_state.dart';
-import 'package:PiliPlus/models_new/fans/data.dart';
+import 'package:PiliPlus/models_new/follow/data.dart';
 
-class FanHttp {
-  static Future<LoadingState<FansData>> fans({
+abstract final class FanHttp {
+  static Future<LoadingState<FollowData>> fans({
     int? vmid,
     int? pn,
     int ps = 20,
     String? orderType,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.fans,
       queryParameters: {
         'vmid': vmid,
@@ -21,7 +21,7 @@ class FanHttp {
       },
     );
     if (res.data['code'] == 0) {
-      return Success(FansData.fromJson(res.data['data']));
+      return Success(FollowData.fromJson(res.data['data']));
     } else {
       return Error(res.data['message']);
     }

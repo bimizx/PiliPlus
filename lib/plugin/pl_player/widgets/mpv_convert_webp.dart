@@ -1,3 +1,5 @@
+// ignore_for_file: implementation_imports
+
 import 'dart:async';
 import 'dart:ffi';
 
@@ -68,7 +70,7 @@ class MpvConvertWebp {
       _observeProperty('time-pos');
     }
     final level = (kDebugMode ? 'info' : 'error').toNativeUtf8();
-    _mpv.mpv_request_log_messages(_ctx, level.cast());
+    _mpv.mpv_request_log_messages(_ctx, level);
     calloc.free(level);
   }
 
@@ -124,7 +126,7 @@ class MpvConvertWebp {
       arr[i] = pointers[i];
     }
 
-    _mpv.mpv_command(_ctx, arr.cast());
+    _mpv.mpv_command(_ctx, arr);
 
     calloc.free(arr);
     pointers.forEach(calloc.free);
@@ -135,7 +137,7 @@ class MpvConvertWebp {
     _mpv.mpv_observe_property(
       _ctx,
       property.hashCode,
-      name.cast(),
+      name,
       generated.mpv_format.MPV_FORMAT_DOUBLE,
     );
 
@@ -150,7 +152,8 @@ enum WebpPreset {
   photo('photo', '照片', '户外摄影，自然光环境'),
   drawing('drawing', '绘图', '手绘或线稿，高对比度细节'),
   icon('icon', '图标', '小型彩色图像'),
-  text('text', '文本', '文字类');
+  text('text', '文本', '文字类')
+  ;
 
   final String flag;
   final String name;

@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
-import 'package:PiliPlus/common/widgets/list_tile.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
-import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
-import 'package:PiliPlus/models/user/info.dart';
 import 'package:PiliPlus/models_new/fav/fav_folder/list.dart';
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/home/view.dart';
@@ -15,14 +13,19 @@ import 'package:PiliPlus/pages/login/controller.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/pages/mine/widgets/item.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class MinePage extends StatefulWidget {
-  const MinePage({super.key});
+  const MinePage({super.key, this.showBackBtn = false});
+
+  final bool showBackBtn;
 
   @override
   State<MinePage> createState() => _MediaPageState();
@@ -31,7 +34,7 @@ class MinePage extends StatefulWidget {
 class _MediaPageState extends CommonPageState<MinePage, MineController>
     with AutomaticKeepAliveClientMixin {
   @override
-  MineController controller = Get.put(MineController());
+  MineController controller = Get.putOrFind(MineController.new);
   late final MainController _mainController = Get.find<MainController>();
 
   @override
@@ -42,19 +45,19 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
       _mainController.selectedIndex.value == 0;
 
   @override
-  bool onNotification(UserScrollNotification notification) {
+  bool onNotificationType1(UserScrollNotification notification) {
     if (checkPage) {
       return false;
     }
-    return super.onNotification(notification);
+    return super.onNotificationType1(notification);
   }
 
   @override
-  void listener() {
+  bool onNotificationType2(ScrollNotification notification) {
     if (checkPage) {
-      return;
+      return false;
     }
-    super.listener();
+    return super.onNotificationType2(notification);
   }
 
   @override
@@ -65,16 +68,17 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
     return onBuild(
       Column(
         children: [
-          const SizedBox(height: 10),
-          _buildHeaderActions,
-          const SizedBox(height: 10),
+          Padding(
+            padding: const .symmetric(vertical: 10),
+            child: _buildHeaderActions,
+          ),
           Expanded(
             child: Material(
-              type: MaterialType.transparency,
+              type: .transparency,
               child: refreshIndicator(
                 onRefresh: controller.onRefresh,
                 child: ListView(
-                  padding: const EdgeInsets.only(bottom: 100),
+                  padding: const .only(bottom: 100),
                   controller: controller.scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
@@ -97,7 +101,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
 
   Widget _buildActions(Color primary) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: .spaceEvenly,
       children: controller.list
           .map(
             (e) => Flexible(
@@ -110,14 +114,10 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                     aspectRatio: 1,
                     child: Column(
                       spacing: 6,
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: .min,
+                      mainAxisAlignment: .center,
                       children: [
-                        Icon(
-                          size: 22,
-                          e.icon,
-                          color: primary,
-                        ),
+                        Icon(size: e.size, e.icon, color: primary),
                         Text(
                           e.title,
                           style: const TextStyle(fontSize: 13),
@@ -134,17 +134,28 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
   }
 
   Widget get _buildHeaderActions {
+    const iconSize = 22.0;
+    const padding = EdgeInsets.all(8);
+    const style = ButtonStyle(tapTargetSize: .shrinkWrap);
     return Row(
       spacing: 5,
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: .end,
       children: [
+        if (widget.showBackBtn)
+          const Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: BackButton(),
+              ),
+            ),
+          ),
         if (!_mainController.hasHome) ...[
           IconButton(
-            iconSize: 22,
-            padding: const EdgeInsets.all(8),
-            style: const ButtonStyle(
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+            iconSize: iconSize,
+            padding: padding,
+            style: style,
             tooltip: '搜索',
             onPressed: () => Get.toNamed('/search'),
             icon: const Icon(Icons.search),
@@ -155,11 +166,9 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
           () {
             final anonymity = MineController.anonymity.value;
             return IconButton(
-              iconSize: 22,
-              padding: const EdgeInsets.all(8),
-              style: const ButtonStyle(
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+              iconSize: iconSize,
+              padding: padding,
+              style: style,
               tooltip: "${anonymity ? '退出' : '进入'}无痕模式",
               onPressed: MineController.onChangeAnonymity,
               icon: anonymity
@@ -169,11 +178,9 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
           },
         ),
         IconButton(
-          iconSize: 22,
-          padding: const EdgeInsets.all(8),
-          style: const ButtonStyle(
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
+          iconSize: iconSize,
+          padding: padding,
+          style: style,
           tooltip: '设置账号模式',
           onPressed: () => LoginPageController.switchAccountDialog(context),
           icon: const Icon(Icons.switch_account_outlined),
@@ -181,11 +188,9 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
         Obx(
           () {
             return IconButton(
-              iconSize: 22,
-              padding: const EdgeInsets.all(8),
-              style: const ButtonStyle(
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+              iconSize: iconSize,
+              padding: padding,
+              style: style,
               tooltip: '切换至${controller.nextThemeType.desc}主题',
               onPressed: controller.onChangeTheme,
               icon: controller.themeType.value.icon,
@@ -193,11 +198,9 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
           },
         ),
         IconButton(
-          iconSize: 22,
-          padding: const EdgeInsets.all(8),
-          style: const ButtonStyle(
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
+          iconSize: iconSize,
+          padding: padding,
+          style: style,
           tooltip: '设置',
           onPressed: () => Get.toNamed('/setting', preventDuplicates: false),
           icon: const Icon(Icons.settings_outlined),
@@ -212,7 +215,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
       fontSize: theme.textTheme.titleMedium!.fontSize,
       fontWeight: FontWeight.bold,
     );
-    final lebelStyle = theme.textTheme.labelMedium!.copyWith(
+    final labelStyle = theme.textTheme.labelMedium!.copyWith(
       color: theme.colorScheme.outline,
     );
     final coinLabelStyle = TextStyle(
@@ -225,8 +228,8 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
       color: secondary,
     );
     return Obx(() {
-      final UserInfoData userInfo = controller.userInfo.value;
-      final LevelInfo? levelInfo = userInfo.levelInfo;
+      final userInfo = controller.userInfo.value;
+      final levelInfo = userInfo.levelInfo;
       final hasLevel = levelInfo != null;
       final isVip = userInfo.vipStatus != null && userInfo.vipStatus! > 0;
       final userStat = controller.userStat.value;
@@ -234,27 +237,26 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            behavior: HitTestBehavior.opaque,
+            behavior: .opaque,
             onTap: controller.onLogin,
             onLongPress: () {
               Feedback.forLongPress(context);
               controller.onLogin(true);
             },
-            onSecondaryTap: Utils.isMobile
+            onSecondaryTap: PlatformUtils.isMobile
                 ? null
                 : () => controller.onLogin(true),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: .min,
               children: [
                 const SizedBox(width: 20),
                 userInfo.face != null
                     ? Stack(
-                        clipBehavior: Clip.none,
+                        clipBehavior: .none,
                         children: [
                           NetworkImgLayer(
                             src: userInfo.face,
-                            semanticsLabel: '头像',
-                            type: ImageType.avatar,
+                            type: .avatar,
                             width: 55,
                             height: 55,
                           ),
@@ -265,6 +267,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                               child: Image.asset(
                                 'assets/images/big-vip.png',
                                 height: 19,
+                                cacheHeight: 19.cacheSize(context),
                                 semanticLabel: "大会员",
                               ),
                             ),
@@ -274,6 +277,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                         child: Image.asset(
                           width: 55,
                           height: 55,
+                          cacheHeight: 55.cacheSize(context),
                           'assets/images/noface.jpeg',
                           semanticLabel: "默认头像",
                         ),
@@ -281,9 +285,9 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: .min,
+                    mainAxisAlignment: .center,
+                    crossAxisAlignment: .start,
                     children: [
                       Row(
                         spacing: 6,
@@ -297,15 +301,17 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                                     ? theme.colorScheme.vipColor
                                     : null,
                               ),
+                              maxLines: 1,
+                              overflow: .ellipsis,
                             ),
                           ),
                           Image.asset(
-                            'assets/images/lv/lv${levelInfo == null
-                                ? 0
-                                : userInfo.isSeniorMember == 1
-                                ? '6_s'
-                                : levelInfo.currentLevel}.png',
+                            Utils.levelName(
+                              levelInfo?.currentLevel ?? 0,
+                              isSeniorMember: userInfo.isSeniorMember == 1,
+                            ),
                             height: 10,
+                            cacheHeight: 10.cacheSize(context),
                           ),
                         ],
                       ),
@@ -344,7 +350,6 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                           value: hasLevel
                               ? levelInfo.currentExp! / levelInfo.nextExp!
                               : 0,
-                          trackGap: hasLevel ? null : 0,
                           backgroundColor: theme.colorScheme.outline.withValues(
                             alpha: 0.4,
                           ),
@@ -361,27 +366,27 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
           ),
           const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: .spaceEvenly,
             children: [
               _btn(
                 count: userStat.dynamicCount,
                 countStyle: style,
                 name: '动态',
-                lebelStyle: lebelStyle,
+                labelStyle: labelStyle,
                 onTap: () => controller.push('memberDynamics'),
               ),
               _btn(
                 count: userStat.following,
                 countStyle: style,
                 name: '关注',
-                lebelStyle: lebelStyle,
+                labelStyle: labelStyle,
                 onTap: () => controller.push('follow'),
               ),
               _btn(
                 count: userStat.follower,
                 countStyle: style,
                 name: '粉丝',
-                lebelStyle: lebelStyle,
+                labelStyle: labelStyle,
                 onTap: () => controller.push('fan'),
               ),
             ],
@@ -395,7 +400,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
     required int? count,
     required TextStyle countStyle,
     required String name,
-    required TextStyle? lebelStyle,
+    required TextStyle? labelStyle,
     required VoidCallback onTap,
   }) {
     return Flexible(
@@ -407,17 +412,17 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
           child: AspectRatio(
             aspectRatio: 1,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 4,
+              mainAxisSize: .min,
+              mainAxisAlignment: .center,
               children: [
                 Text(
                   count?.toString() ?? '-',
                   style: countStyle,
                 ),
-                const SizedBox(height: 4),
                 Text(
                   name,
-                  style: lebelStyle,
+                  style: labelStyle,
                 ),
               ],
             ),
@@ -451,12 +456,12 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                     text: '我的收藏  ',
                     style: TextStyle(
                       fontSize: theme.textTheme.titleMedium!.fontSize,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: .bold,
                     ),
                   ),
-                  if (controller.favFoldercount != null)
+                  if (controller.favFolderCount != null)
                     TextSpan(
-                      text: "${controller.favFoldercount}  ",
+                      text: "${controller.favFolderCount}  ",
                       style: TextStyle(
                         fontSize: theme.textTheme.titleSmall!.fontSize,
                         color: secondary,
@@ -491,29 +496,27 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
   ) {
     return switch (loadingState) {
       Loading() => const SizedBox.shrink(),
-      Success(:var response) => Builder(
+      Success(:final response) => Builder(
         builder: (context) {
           List<FavFolderInfo>? favFolderList = response.list;
           if (favFolderList == null || favFolderList.isEmpty) {
             return const SizedBox.shrink();
           }
-          bool flag = (controller.favFoldercount ?? 0) > favFolderList.length;
+          bool flag = (controller.favFolderCount ?? 0) > favFolderList.length;
           return SizedBox(
             height: 200,
             child: ListView.separated(
-              padding: const EdgeInsets.only(left: 20, top: 12, right: 20),
+              padding: const .only(left: 20, top: 10, right: 20),
               itemCount: response.list.length + (flag ? 1 : 0),
               itemBuilder: (context, index) {
                 if (flag && index == favFolderList.length) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 35),
+                    padding: const .only(bottom: 35),
                     child: Center(
                       child: IconButton(
                         tooltip: '查看更多',
                         style: ButtonStyle(
-                          padding: const WidgetStatePropertyAll(
-                            EdgeInsets.zero,
-                          ),
+                          padding: const WidgetStatePropertyAll(.zero),
                           backgroundColor: WidgetStatePropertyAll(
                             theme.colorScheme.secondaryContainer.withValues(
                               alpha: 0.5,
@@ -538,25 +541,25 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                   return FavFolderItem(
                     heroTag: Utils.generateRandomString(8),
                     item: response.list[index],
-                    callback: () => Future.delayed(
+                    onPop: () => Future.delayed(
                       const Duration(milliseconds: 150),
                       controller.onRefresh,
                     ),
                   );
                 }
               },
-              scrollDirection: Axis.horizontal,
-              separatorBuilder: (context, index) => const SizedBox(width: 14),
+              scrollDirection: .horizontal,
+              separatorBuilder: (_, _) => const SizedBox(width: 14),
             ),
           );
         },
       ),
-      Error(:var errMsg) => SizedBox(
+      Error(:final errMsg) => SizedBox(
         height: 160,
         child: Center(
           child: Text(
             errMsg ?? '',
-            textAlign: TextAlign.center,
+            textAlign: .center,
           ),
         ),
       ),

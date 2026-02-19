@@ -5,7 +5,8 @@ import 'package:PiliPlus/pages/search_panel/controller.dart';
 import 'package:PiliPlus/pages/search_panel/pgc/widgets/item.dart';
 import 'package:PiliPlus/pages/search_panel/view.dart';
 import 'package:PiliPlus/utils/grid.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'
+    hide SliverGridDelegateWithMaxCrossAxisExtent;
 import 'package:get/get.dart';
 
 class SearchPgcPanel extends CommonSearchPanel {
@@ -28,14 +29,21 @@ class _SearchPgcPanelState
           SearchPgcItemModel
         > {
   @override
-  late final controller = Get.put(
-    SearchPanelController<SearchPgcData, SearchPgcItemModel>(
-      keyword: widget.keyword,
-      searchType: widget.searchType,
-      tag: widget.tag,
-    ),
-    tag: widget.searchType.name + widget.tag,
-  );
+  late final SearchPanelController<SearchPgcData, SearchPgcItemModel>
+  controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(
+      SearchPanelController<SearchPgcData, SearchPgcItemModel>(
+        keyword: widget.keyword,
+        searchType: widget.searchType,
+        tag: widget.tag,
+      ),
+      tag: widget.searchType.name + widget.tag,
+    );
+  }
 
   late final gridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
     maxCrossAxisExtent: Grid.smallCardWidth * 2,
@@ -57,7 +65,7 @@ class _SearchPgcPanelState
   }
 
   @override
-  Widget get builLoading => SliverGrid.builder(
+  Widget get buildLoading => SliverGrid.builder(
     gridDelegate: SliverGridDelegateWithExtentAndRatio(
       mainAxisSpacing: 2,
       maxCrossAxisExtent: Grid.smallCardWidth * 2,

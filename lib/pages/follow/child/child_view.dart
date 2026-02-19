@@ -1,12 +1,16 @@
+import 'dart:math';
+
 import 'package:PiliPlus/common/skeleton/msg_feed_top.dart';
+import 'package:PiliPlus/common/widgets/button/more_btn.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/follow_order_type.dart';
 import 'package:PiliPlus/models_new/follow/list.dart';
 import 'package:PiliPlus/pages/follow/child/child_controller.dart';
 import 'package:PiliPlus/pages/follow/controller.dart';
 import 'package:PiliPlus/pages/follow/widgets/follow_item.dart';
+import 'package:PiliPlus/pages/follow_type/follow_same/view.dart';
 import 'package:PiliPlus/pages/share/view.dart' show UserModel;
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -34,32 +38,45 @@ class FollowChildPage extends StatefulWidget {
 
 class _FollowChildPageState extends State<FollowChildPage>
     with AutomaticKeepAliveClientMixin {
-  late final _followController = Get.put(
-    FollowChildController(widget.controller, widget.mid, widget.tagid),
-    tag: '${widget.tag ?? Utils.generateRandomString(8)}${widget.tagid}',
-  );
+  late final FollowChildController _followController;
+
+  @override
+  void initState() {
+    super.initState();
+    _followController = Get.put(
+      FollowChildController(widget.controller, widget.mid, widget.tagid),
+      tag: '${widget.tag ?? Utils.generateRandomString(8)}${widget.tagid}',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final colorScheme = ColorScheme.of(context);
     final padding = MediaQuery.viewPaddingOf(context);
-    Widget child = refreshIndicator(
-      onRefresh: _followController.onRefresh,
-      child: CustomScrollView(
-        controller: _followController.scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: EdgeInsets.only(
-              left: padding.left,
-              right: padding.right,
-              bottom: padding.bottom + 100,
+    Widget child = Padding(
+      padding: EdgeInsets.only(left: padding.left, right: padding.right),
+      child: refreshIndicator(
+        onRefresh: _followController.onRefresh,
+        child: CustomScrollView(
+          controller: _followController.scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (_followController.loadSameFollow)
+              Obx(
+                () => _buildSameFollowing(
+                  colorScheme,
+                  _followController.sameState.value,
+                ),
+              ),
+            SliverPadding(
+              padding: EdgeInsets.only(bottom: padding.bottom + 100),
+              sliver: Obx(
+                () => _buildBody(_followController.loadingState.value),
+              ),
             ),
-            sliver: Obx(
-              () => _buildBody(_followController.loadingState.value),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
     if (widget.onSelect != null ||
@@ -73,10 +90,11 @@ class _FollowChildPageState extends State<FollowChildPage>
             bottom: kFloatingActionButtonMargin + padding.bottom,
             child: FloatingActionButton.extended(
               onPressed: () => _followController
-                ..orderType.value =
-                    _followController.orderType.value == FollowOrderType.def
-                    ? FollowOrderType.attention
-                    : FollowOrderType.def
+                ..setOrderType(
+                  _followController.orderType.value == FollowOrderType.def
+                      ? FollowOrderType.attention
+                      : FollowOrderType.def,
+                )
                 ..onReload(),
               icon: const Icon(Icons.format_list_bulleted, size: 20),
               label: Obx(() => Text(_followController.orderType.value.title)),
@@ -94,10 +112,10 @@ class _FollowChildPageState extends State<FollowChildPage>
         itemCount: 12,
         itemBuilder: (context, index) => const MsgFeedTopSkeleton(),
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverList.builder(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
                     _followController.onLoadMore();
@@ -107,7 +125,7 @@ class _FollowChildPageState extends State<FollowChildPage>
                     item: item,
                     isOwner: widget.controller?.isOwner,
                     onSelect: widget.onSelect,
-                    callback: (attr) {
+                    afterMod: (attr) {
                       item.attribute = attr == 0 ? -1 : 0;
                       _followController.loadingState.refresh();
                     },
@@ -115,10 +133,73 @@ class _FollowChildPageState extends State<FollowChildPage>
                 },
               )
             : HttpError(onReload: _followController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _followController.onReload,
       ),
+    };
+  }
+
+  Widget _buildSameFollowing(
+    ColorScheme colorScheme,
+    LoadingState<List<FollowItemModel>?> state,
+  ) {
+    return switch (state) {
+      Success(:final response) =>
+        response != null && response.isNotEmpty
+            ? SliverMainAxisGroup(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 6,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '我们的共同关注',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          moreTextButton(
+                            onTap: () => FollowSamePage.toFollowSamePage(
+                              mid: _followController.mid,
+                              name: widget.controller?.name.value,
+                            ),
+                            color: colorScheme.outline,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverList.builder(
+                    itemCount: min(3, response.length),
+                    itemBuilder: (_, index) =>
+                        FollowItem(item: response[index]),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        top: 16,
+                        bottom: 6,
+                      ),
+                      child: Text(
+                        '全部关注',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : const SliverToBoxAdapter(),
+      _ => const SliverToBoxAdapter(),
     };
   }
 

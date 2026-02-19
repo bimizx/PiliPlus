@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/skeleton/video_reply.dart';
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/grpc/bilibili/main/community/reply/v1.pb.dart'
     show ReplyInfo;
 import 'package:PiliPlus/http/loading_state.dart';
@@ -20,15 +20,11 @@ class VideoReplyPanel extends StatefulWidget {
     super.key,
     this.replyLevel = 1,
     required this.heroTag,
-    this.onViewImage,
-    this.onDismissed,
     required this.isNested,
   });
 
   final int replyLevel;
   final String heroTag;
-  final VoidCallback? onViewImage;
-  final ValueChanged<int>? onDismissed;
   final bool isNested;
 
   @override
@@ -89,7 +85,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
                       parent: ClampingScrollPhysics(),
                     )
                   : const AlwaysScrollableScrollPhysics(),
-              key: const PageStorageKey<String>('评论'),
+              key: const PageStorageKey(_VideoReplyPanelState),
               slivers: <Widget>[
                 SliverPersistentHeader(
                   pinned: false,
@@ -146,13 +142,13 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
               right: kFloatingActionButtonMargin,
               bottom: kFloatingActionButtonMargin + bottom,
               child: SlideTransition(
-                position: _videoReplyController.anim,
+                position: _videoReplyController.animation,
                 child: FloatingActionButton(
                   heroTag: null,
                   onPressed: () {
                     feedBack();
                     _videoReplyController.onReply(
-                      context,
+                      null,
                       oid: _videoReplyController.aid,
                       replyType: _videoReplyController.videoType.replyType,
                     );
@@ -184,7 +180,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
         itemBuilder: (context, index) => const VideoReplySkeleton(),
         itemCount: 5,
       ),
-      Success(:var response) =>
+      Success(:final response) =>
         response != null && response.isNotEmpty
             ? SliverList.builder(
                 itemBuilder: (context, index) {
@@ -208,16 +204,11 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
                       replyItem: response[index],
                       replyLevel: widget.replyLevel,
                       replyReply: replyReply,
-                      onReply: (replyItem) => _videoReplyController.onReply(
-                        context,
-                        replyItem: replyItem,
-                      ),
+                      onReply: _videoReplyController.onReply,
                       onDelete: (item, subIndex) =>
                           _videoReplyController.onRemove(index, item, subIndex),
                       upMid: _videoReplyController.upMid,
                       getTag: () => heroTag,
-                      onViewImage: widget.onViewImage,
-                      onDismissed: widget.onDismissed,
                       onCheckReply: (item) => _videoReplyController
                           .onCheckReply(item, isManual: true),
                       onToggleTop: (item) => _videoReplyController.onToggleTop(
@@ -235,7 +226,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
                 errMsg: '还没有评论',
                 onReload: _videoReplyController.onReload,
               ),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _videoReplyController.onReload,
       ),
@@ -255,11 +246,9 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
           id: id,
           oid: oid,
           rpid: rpid,
-          firstFloor: replyItem,
+          firstFloor: replyItem.replyControl.isNote ? null : replyItem,
           replyType: _videoReplyController.videoType.replyType,
           isVideoDetail: true,
-          onViewImage: widget.onViewImage,
-          onDismissed: widget.onDismissed,
           isNested: widget.isNested,
         ),
       );

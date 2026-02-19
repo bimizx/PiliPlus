@@ -6,7 +6,7 @@ import 'package:PiliPlus/grpc/url.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:fixnum/fixnum.dart';
 
-class AudioGrpc {
+abstract final class AudioGrpc {
   static Future<LoadingState<PlayURLResp>> audioPlayUrl({
     required Int64 oid,
     required List<Int64> subId,
@@ -44,6 +44,7 @@ class AudioGrpc {
     String? next,
     int qn = 80,
     int fnval = 4048,
+    ListOrder order = ListOrder.ORDER_NORMAL,
   }) {
     return GrpcReq.request(
       GrpcUrl.audioPlayList,
@@ -63,7 +64,7 @@ class AudioGrpc {
           voiceBalance: Int64(1),
         ),
         extraId: extraId,
-        sortOpt: SortOption(order: ListOrder.ORDER_NORMAL),
+        sortOpt: SortOption(order: order),
         pagination: Pagination(pageSize: 20, next: next),
       ),
       PlaylistResp.fromBuffer,

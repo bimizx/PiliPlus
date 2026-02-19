@@ -6,8 +6,8 @@ import 'package:PiliPlus/models_new/dynamic/dyn_topic_feed/topic_card_list.dart'
 import 'package:PiliPlus/models_new/dynamic/dyn_topic_feed/topic_sort_by_conf.dart';
 import 'package:PiliPlus/models_new/dynamic/dyn_topic_top/top_details.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
-import 'package:PiliPlus/services/account_service.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
@@ -28,7 +28,7 @@ class DynTopicController
   Rx<LoadingState<TopDetails?>> topState =
       LoadingState<TopDetails?>.loading().obs;
 
-  AccountService accountService = Get.find<AccountService>();
+  late final isLogin = Accounts.main.isLogin;
 
   @override
   void onInit() {
@@ -39,8 +39,8 @@ class DynTopicController
 
   Future<void> queryTop() async {
     topState.value = await DynamicsHttp.topicTop(topicId: topicId);
-    if (topState.value.isSuccess) {
-      var topicItem = topState.value.data!.topicItem!;
+    if (topState.value case Success(:final response)) {
+      final topicItem = response!.topicItem!;
       topicName = topicItem.name;
       isFav.value = topicItem.isFav;
       isLike.value = topicItem.isLike;
@@ -92,15 +92,15 @@ class DynTopicController
   }
 
   Future<void> onFav() async {
-    if (!accountService.isLogin.value) {
+    if (!isLogin) {
       SmartDialog.showToast('账号未登录');
       return;
     }
     bool isFav = this.isFav.value ?? false;
-    var res = isFav
+    final res = isFav
         ? await FavHttp.delFavTopic(topicId)
         : await FavHttp.addFavTopic(topicId);
-    if (res['status']) {
+    if (res.isSuccess) {
       if (isFav) {
         topState.value.data!.topicItem!.fav -= 1;
       } else {
@@ -108,18 +108,18 @@ class DynTopicController
       }
       this.isFav.value = !isFav;
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 
   Future<void> onLike() async {
-    if (!accountService.isLogin.value) {
+    if (!isLogin) {
       SmartDialog.showToast('账号未登录');
       return;
     }
     bool isLike = this.isLike.value ?? false;
-    var res = await FavHttp.likeTopic(topicId, isLike);
-    if (res['status']) {
+    final res = await FavHttp.likeTopic(topicId, isLike);
+    if (res.isSuccess) {
       if (isLike) {
         topState.value.data!.topicItem!.like -= 1;
       } else {
@@ -127,7 +127,7 @@ class DynTopicController
       }
       this.isLike.value = !isLike;
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 }

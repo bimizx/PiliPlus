@@ -8,20 +8,24 @@ import 'package:PiliPlus/grpc/bilibili/main/community/reply/v1.pb.dart'
     show ReplyInfo;
 import 'package:PiliPlus/models/common/video/video_type.dart';
 import 'package:PiliPlus/models/dynamics/result.dart';
+import 'package:PiliPlus/pages/common/publish/publish_route.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/dynamic_panel.dart';
 import 'package:PiliPlus/pages/music/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/pgc/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/controller.dart';
 import 'package:PiliPlus/pages/video/reply/widgets/reply_item_grpc.dart';
-import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 import 'package:share_plus/share_plus.dart';
@@ -41,25 +45,20 @@ class SavePanel extends StatefulWidget {
   State<SavePanel> createState() => _SavePanelState();
 
   static void toSavePanel({dynamic upMid, dynamic item}) {
-    Get.generalDialog(
-      barrierLabel: '',
-      barrierDismissible: true,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return SavePanel(upMid: upMid, item: item);
-      },
-      transitionDuration: const Duration(milliseconds: 255),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation.drive(
-            Tween<double>(
-              begin: 0,
-              end: 1,
-            ).chain(CurveTween(curve: Curves.easeInOut)),
-          ),
-          child: child,
-        );
-      },
-      routeSettings: RouteSettings(arguments: Get.arguments),
+    Get.key.currentState!.push(
+      PublishRoute(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return SavePanel(upMid: upMid, item: item);
+        },
+        transitionDuration: const Duration(milliseconds: 255),
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation.drive(CurveTween(curve: Curves.easeInOut)),
+            child: child,
+          );
+        },
+        settings: RouteSettings(arguments: Get.arguments),
+      ),
     );
   }
 }
@@ -87,20 +86,25 @@ class _SavePanelState extends State<SavePanel> {
   @override
   void initState() {
     super.initState();
-    if (_item case ReplyInfo reply) {
+    if (_item case final ReplyInfo reply) {
       itemType = '评论';
       final currentRoute = Get.currentRoute;
       late final hasRoot = reply.hasRoot();
 
       if (currentRoute.startsWith('/video')) {
+        final rootId = hasRoot ? reply.root : reply.id;
+
+        uri =
+            'https://www.bilibili.com/video/av${reply.oid}?comment_on=1&comment_root_id=$rootId${hasRoot ? '&comment_secondary_id=${reply.id}' : ''}';
         try {
           final heroTag = Get.arguments['heroTag'];
           final videoType = Get.arguments['videoType'];
           if (videoType == VideoType.pgc || videoType == VideoType.pugv) {
             final ctr = Get.find<PgcIntroController>(tag: heroTag);
             final pgcItem = ctr.pgcItem;
+            final cid = ctr.cid.value;
             final episode = pgcItem.episodes!.firstWhere(
-              (e) => e.cid == ctr.cid.value,
+              (e) => e.cid == cid,
             );
             cover = episode.cover;
             title =
@@ -108,6 +112,12 @@ class _SavePanelState extends State<SavePanel> {
                 '${pgcItem.title} ${episode.showTitle ?? episode.longTitle ?? ''}';
             pubdate = episode.pubTime;
             uname = pgcItem.upInfo?.uname;
+
+            final oid = reply.oid;
+            final type = reply.type.toInt();
+            final anchor = hasRoot ? 'anchor=${reply.id}&' : '';
+            uri =
+                'bilibili://comment/detail/$type/$oid/$rootId/?${anchor}enterUri=bilibili://pgc/season/ep/${ctr.epId}';
           } else {
             final ctr = Get.find<UgcIntroController>(tag: heroTag);
             final videoDetail = ctr.videoDetail.value;
@@ -115,50 +125,52 @@ class _SavePanelState extends State<SavePanel> {
             title = videoDetail.title;
             pubdate = videoDetail.pubdate;
             uname = videoDetail.owner?.name;
+
+            final cid = ctr.cid.value;
+            final part =
+                ctr.videoDetail.value.pages?.indexWhere((i) => i.cid == cid) ??
+                -1;
+            if (part > 0) uri += '&p=${part + 1}';
           }
         } catch (_) {}
-        uri =
-            'bilibili://video/${reply.oid}?comment_root_id=${hasRoot ? reply.root : reply.id}${hasRoot ? '&comment_secondary_id=${reply.id}' : ''}';
-
-        try {
-          final heroTag = Get.arguments['heroTag'];
-          late final ctr = Get.find<PgcIntroController>(tag: heroTag);
-          final type = reply.type.toInt();
-          late final oid = reply.oid;
-          late final rootId = hasRoot ? reply.root : reply.id;
-          late final anchor = hasRoot ? 'anchor=${reply.id}&' : '';
-          uri =
-              'bilibili://comment/detail/$type/$oid/$rootId/?${anchor}enterUri=bilibili://pgc/season/ep/${ctr.epId}';
-        } catch (_) {}
       } else if (currentRoute.startsWith('/dynamicDetail')) {
+        DynamicItemModel? dynItem;
         try {
-          DynamicItemModel dynItem = Get.arguments['item'];
+          dynItem = Get.arguments['item'] as DynamicItemModel;
           uname = dynItem.modules.moduleAuthor?.name;
-          final type = reply.type.toInt();
-          late final oid = dynItem.idStr;
-          late final rootId = hasRoot ? reply.root : reply.id;
-          late final anchor = hasRoot ? 'anchor=${reply.id}&' : '';
-          late final enterUri = parseDyn(dynItem);
-          uri = switch (type) {
-            1 || 11 || 12 =>
-              'bilibili://comment/detail/$type/${dynItem.basic!.ridStr}/$rootId/?${anchor}enterUri=$enterUri',
-            _ =>
-              'bilibili://comment/detail/$type/$oid/$rootId/?${anchor}enterUri=$enterUri',
-          };
         } catch (_) {}
+        final type = reply.type.toInt();
+        final oid = reply.oid;
+        final rootId = hasRoot ? reply.root : reply.id;
+
+        if (type == 1) {
+          uri =
+              'https://www.bilibili.com/video/av$oid?comment_on=1&comment_root_id=$rootId${hasRoot ? '&comment_secondary_id=${reply.id}' : ''}';
+        } else {
+          final enterUri = dynItem == null
+              ? ''
+              : 'enterUri=${parseDyn(dynItem)}';
+          uri =
+              'bilibili://comment/detail/$type/$oid/$rootId/?${hasRoot ? 'anchor=${reply.id}&' : ''}$enterUri';
+        }
       } else if (currentRoute.startsWith('/Scaffold')) {
         try {
           final type = reply.type.toInt();
-          late final oid = Get.arguments['oid'];
-          late final rootId = hasRoot ? reply.root : reply.id;
-          late final anchor = hasRoot ? 'anchor=${reply.id}&' : '';
-          late final enterUri = 'bilibili://following/detail/$oid';
-          uri = switch (type) {
-            1 || 11 || 12 =>
-              'bilibili://comment/detail/$type/$oid/$rootId/?${anchor}enterUri=${Get.arguments['enterUri']}',
-            _ =>
-              'bilibili://comment/detail/$type/$oid/$rootId/?${anchor}enterUri=$enterUri',
-          };
+          final oid = Get.arguments['oid'] ?? reply.oid;
+          final rootId = hasRoot ? reply.root : reply.id;
+          if (type == 1) {
+            uri =
+                'https://www.bilibili.com/video/av$oid?comment_on=1&comment_root_id=$rootId${hasRoot ? '&comment_secondary_id=${reply.id}' : ''}';
+          } else {
+            String enterUri = Get.arguments['enterUri'] ?? '';
+            if (enterUri.isNotEmpty) {
+              enterUri = 'enterUri=${Uri.encodeComponent(enterUri)}';
+            } else if (const [11, 12, 17].contains(type)) {
+              enterUri = 'enterUri=bilibili://following/detail/$oid';
+            }
+            uri =
+                'bilibili://comment/detail/$type/$oid/$rootId/?${hasRoot ? 'anchor=${reply.id}&' : ''}$enterUri';
+          }
         } catch (_) {}
       } else if (currentRoute.startsWith('/articlePage')) {
         try {
@@ -181,7 +193,8 @@ class _SavePanelState extends State<SavePanel> {
           final ctr = Get.find<MusicDetailController>(
             tag: Get.parameters['musicId'],
           );
-          // enterUri = 'enterUri=${Uri.encodeComponent(ctr.shareUrl)}'; // official client cannot parse it
+          enterUri =
+              'enterUri=${Uri.encodeComponent(ctr.shareUrl)}'; // official client cannot parse it
           final data = ctr.infoState.value.dataOrNull;
           if (data != null) {
             coverType = _CoverType.square;
@@ -202,7 +215,7 @@ class _SavePanelState extends State<SavePanel> {
       }
 
       if (kDebugMode) debugPrint(uri);
-    } else if (_item case DynamicItemModel i) {
+    } else if (_item case final DynamicItemModel i) {
       uri = parseDyn(i);
 
       if (kDebugMode) debugPrint(uri);
@@ -272,17 +285,17 @@ class _SavePanelState extends State<SavePanel> {
   }
 
   Future<void> _onSaveOrSharePic([bool isShare = false]) async {
-    if (!isShare && Utils.isMobile) {
-      if (mounted && !await ImageUtils.checkPermissionDependOnSdkInt(context)) {
-        return;
-      }
+    if (!isShare &&
+        PlatformUtils.isMobile &&
+        !await ImageUtils.checkPermissionDependOnSdkInt()) {
+      return;
     }
     SmartDialog.showLoading();
     try {
       RenderRepaintBoundary boundary =
           boundaryKey.currentContext!.findRenderObject()
               as RenderRepaintBoundary;
-      var image = await boundary.toImage(pixelRatio: 3);
+      final image = await boundary.toImage(pixelRatio: 3);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
       String picName =
@@ -358,7 +371,7 @@ class _SavePanelState extends State<SavePanel> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_item case ReplyInfo reply)
+                          if (_item case final ReplyInfo reply)
                             IgnorePointer(
                               child: ReplyItemGrpc(
                                 replyItem: reply,
@@ -367,7 +380,7 @@ class _SavePanelState extends State<SavePanel> {
                                 upMid: widget.upMid,
                               ),
                             )
-                          else if (_item case DynamicItemModel dyn)
+                          else if (_item case final DynamicItemModel dyn)
                             IgnorePointer(
                               child: DynamicPanel(
                                 item: dyn,
@@ -394,13 +407,16 @@ class _SavePanelState extends State<SavePanel> {
                               child: Row(
                                 children: [
                                   NetworkImgLayer(
-                                    radius: 6,
                                     src: cover!,
                                     height: coverSize,
                                     width: coverType == _CoverType.def16_9
-                                        ? coverSize * 16 / 9
+                                        ? coverSize *
+                                              StyleString.aspectRatio16x9
                                         : coverSize,
                                     quality: 100,
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(6),
+                                    ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -484,19 +500,20 @@ class _SavePanelState extends State<SavePanel> {
                                                 ],
                                               ),
                                             ),
-                                            Container(
-                                              width: 100,
-                                              height: 100,
-                                              padding: const EdgeInsets.all(
-                                                12,
-                                              ),
+                                            GestureDetector(
+                                              onTap: () => Utils.copyText(uri),
                                               child: Container(
-                                                color: Get.isDarkMode
-                                                    ? Colors.white
-                                                    : theme.colorScheme.surface,
+                                                width: 88,
+                                                height: 88,
+                                                margin: const EdgeInsets.all(
+                                                  12,
+                                                ),
                                                 padding: const EdgeInsets.all(
                                                   3,
                                                 ),
+                                                color: theme.brightness.isDark
+                                                    ? Colors.white
+                                                    : theme.colorScheme.surface,
                                                 child: PrettyQrView.data(
                                                   data: uri,
                                                   decoration:
@@ -515,6 +532,7 @@ class _SavePanelState extends State<SavePanel> {
                                       child: Image.asset(
                                         'assets/images/logo/logo_2.png',
                                         width: 100,
+                                        cacheWidth: 100.cacheSize(context),
                                         color:
                                             theme.colorScheme.onSurfaceVariant,
                                       ),
@@ -574,7 +592,7 @@ class _SavePanelState extends State<SavePanel> {
                         showBottom = !showBottom;
                       }),
                     ),
-                    if (Utils.isMobile)
+                    if (PlatformUtils.isMobile)
                       iconButton(
                         size: 42,
                         tooltip: '分享',

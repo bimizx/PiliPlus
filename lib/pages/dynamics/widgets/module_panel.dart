@@ -1,6 +1,6 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
-import 'package:PiliPlus/common/widgets/dyn/ink_well.dart';
+import 'package:PiliPlus/common/widgets/flutter/dyn/ink_well.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/grpc/bilibili/app/listener/v1.pbenum.dart'
     show PlaylistSource;
@@ -11,7 +11,8 @@ import 'package:PiliPlus/pages/dynamics/widgets/live_panel.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/live_panel_sub.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/live_rcmd_panel.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/video_panel.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide InkWell;
@@ -154,13 +155,10 @@ Widget module(
                       width: 45,
                       height: 45,
                       fit: BoxFit.cover,
-                      imageUrl: item
-                          .modules
-                          .moduleDynamic!
-                          .major!
-                          .common!
-                          .cover!
-                          .http2https,
+                      memCacheWidth: 45.cacheSize(context),
+                      imageUrl: ImageUtils.safeThumbnailUrl(
+                        item.modules.moduleDynamic!.major!.common!.cover,
+                      ),
                     ),
                   ),
                 Expanded(
@@ -226,10 +224,12 @@ Widget module(
               spacing: 10,
               children: [
                 NetworkImgLayer(
-                  radius: 8,
                   width: 45,
                   height: 45,
                   src: music.cover,
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(8),
+                  ),
                 ),
                 Expanded(
                   child: Column(

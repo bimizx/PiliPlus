@@ -1,16 +1,16 @@
 import 'package:PiliPlus/common/skeleton/msg_feed_sys_msg_.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
-import 'package:PiliPlus/common/widgets/list_tile.dart';
+import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/msg/msg_sys/data.dart';
 import 'package:PiliPlus/pages/msg_feed_top/sys_msg/controller.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
-import 'package:flutter/gestures.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -23,8 +23,9 @@ class SysMsgPage extends StatefulWidget {
 }
 
 class _SysMsgPageState extends State<SysMsgPage> {
-  late final _sysMsgController = Get.put(SysMsgController());
-  late final RegExp urlRegExp = RegExp(
+  final _sysMsgController = Get.put(SysMsgController());
+
+  static final RegExp _urlRegExp = RegExp(
     r'#\{([^}]*)\}\{([^}]*)\}|https?:\/\/[^\s/\$.?#].[^\s]*|www\.[^\s/\$.?#].[^\s]*|【(.*?)】|（(\d+)）',
   );
 
@@ -70,10 +71,10 @@ class _SysMsgPageState extends State<SysMsgPage> {
           itemBuilder: (context, index) => const MsgFeedSysMsgSkeleton(),
         ),
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverList.separated(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, int index) {
                   if (index == response.length - 1) {
                     _sysMsgController.onLoadMore();
@@ -87,7 +88,7 @@ class _SysMsgPageState extends State<SysMsgPage> {
                   return ListTile(
                     safeArea: true,
                     onLongPress: onLongPress,
-                    onSecondaryTap: Utils.isMobile ? null : onLongPress,
+                    onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
                     title: Text(
                       "${item.title}",
                       style: theme.textTheme.titleMedium,
@@ -125,7 +126,7 @@ class _SysMsgPageState extends State<SysMsgPage> {
                 separatorBuilder: (context, index) => divider,
               )
             : HttpError(onReload: _sysMsgController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _sysMsgController.onReload,
       ),
@@ -135,31 +136,40 @@ class _SysMsgPageState extends State<SysMsgPage> {
   InlineSpan _buildContent(ThemeData theme, String content) {
     final List<InlineSpan> spanChildren = <InlineSpan>[];
     content.splitMapJoin(
-      urlRegExp,
+      _urlRegExp,
       onMatch: (Match match) {
-        String matchStr = match[0]!;
+        final matchStr = match[0]!;
         if (matchStr.startsWith('#')) {
-          spanChildren.add(
-            TextSpan(
-              text: match[1],
-              style: TextStyle(color: theme.colorScheme.primary),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () {
-                  try {
-                    PiliScheme.routePushFromUrl(match[2]!.replaceAll('"', ''));
-                  } catch (err) {
-                    SmartDialog.showToast(err.toString());
-                  }
-                },
-            ),
-          );
+          try {
+            final url = match[2]!.replaceAll('"', '');
+            spanChildren.add(
+              TextSpan(
+                text: match[1],
+                style: TextStyle(color: theme.colorScheme.primary),
+                recognizer: NoDeadlineTapGestureRecognizer()
+                  ..onTap = () {
+                    try {
+                      PiliScheme.routePushFromUrl(url);
+                    } catch (err) {
+                      SmartDialog.showToast(err.toString());
+                    }
+                  },
+              ),
+            );
+          } catch (e) {
+            spanChildren.add(TextSpan(text: matchStr));
+          }
         } else if (matchStr.startsWith('【')) {
           try {
-            bool isBV = match[3]?.startsWith('BV') == true;
+            final isBV = match[3]!.startsWith('BV');
+            final int validAv;
+            final String validBv;
             if (isBV) {
-              IdUtils.bv2av(match[3]!);
+              validBv = match[3]!;
+              validAv = IdUtils.bv2av(validBv);
             } else {
-              IdUtils.av2bv(int.parse(match[3]!));
+              validAv = int.parse(match[3]!);
+              validBv = IdUtils.av2bv(validAv);
             }
             spanChildren
               ..add(const TextSpan(text: '【'))
@@ -167,59 +177,45 @@ class _SysMsgPageState extends State<SysMsgPage> {
                 TextSpan(
                   text: match[3],
                   style: TextStyle(color: theme.colorScheme.primary),
-                  recognizer: TapGestureRecognizer()
+                  recognizer: NoDeadlineTapGestureRecognizer()
                     ..onTap = () {
-                      try {
-                        PiliScheme.videoPush(
-                          isBV ? null : int.parse(match[3]!),
-                          isBV ? match[3]! : null,
-                        );
-                      } catch (err) {
-                        SmartDialog.showToast(err.toString());
-                      }
+                      PiliScheme.videoPush(validAv, validBv);
                     },
                 ),
               )
               ..add(const TextSpan(text: '】'));
           } catch (e) {
-            spanChildren.add(TextSpan(text: match[0]));
+            spanChildren.add(TextSpan(text: matchStr));
           }
         } else if (matchStr.startsWith('（')) {
           try {
-            match[4]; // dynId
+            final dynId = match[4]!; // check dynId
             spanChildren
               ..add(const TextSpan(text: '（'))
               ..add(
                 TextSpan(
                   text: '查看动态',
                   style: TextStyle(color: theme.colorScheme.primary),
-                  recognizer: TapGestureRecognizer()
+                  recognizer: NoDeadlineTapGestureRecognizer()
                     ..onTap = () {
-                      try {
-                        PageUtils.pushDynFromId(id: match[4]);
-                      } catch (err) {
-                        SmartDialog.showToast(err.toString());
-                      }
+                      PageUtils.pushDynFromId(id: dynId).catchError(
+                        (err) => SmartDialog.showToast(err.toString()),
+                      );
                     },
                 ),
               )
               ..add(const TextSpan(text: '）'));
           } catch (e) {
-            spanChildren.add(TextSpan(text: match[0]));
+            spanChildren.add(TextSpan(text: matchStr));
           }
         } else {
           spanChildren.add(
             TextSpan(
               text: '\u{1F517}网页链接',
               style: TextStyle(color: theme.colorScheme.primary),
-              recognizer: TapGestureRecognizer()
+              recognizer: NoDeadlineTapGestureRecognizer()
                 ..onTap = () {
-                  try {
-                    PiliScheme.routePushFromUrl(match[0]!);
-                  } catch (err) {
-                    SmartDialog.showToast(err.toString());
-                    Utils.copyText(match[0] ?? '');
-                  }
+                  PiliScheme.routePushFromUrl(matchStr);
                 },
             ),
           );

@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
 import 'package:PiliPlus/http/danmaku.dart';
+import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/main.dart';
 import 'package:PiliPlus/models/common/publish_panel_type.dart';
 import 'package:PiliPlus/pages/common/publish/common_text_pub_page.dart';
-import 'package:PiliPlus/pages/danmaku/dnamaku_model.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/pages/setting/slide_color_picker.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
@@ -22,12 +23,12 @@ class SendDanmakuPanel extends CommonTextPubPage {
   final dynamic bvid;
   final dynamic progress;
 
-  final ValueChanged<DanmakuContentItem<DanmakuExtra>> callback;
+  final ValueChanged<DanmakuContentItem<DanmakuExtra>> onSuccess;
   final bool darkVideoPage;
 
   // config
-  final ({int? mode, int? fontsize, Color? color})? dmConfig;
-  final ValueChanged<({int mode, int fontsize, Color color})>? onSaveDmConfig;
+  final ({int? mode, int? fontSize, Color? color})? dmConfig;
+  final ValueChanged<({int mode, int fontSize, Color color})>? onSaveDmConfig;
 
   const SendDanmakuPanel({
     super.key,
@@ -36,7 +37,7 @@ class SendDanmakuPanel extends CommonTextPubPage {
     this.cid,
     this.bvid,
     this.progress,
-    required this.callback,
+    required this.onSuccess,
     required this.darkVideoPage,
     this.dmConfig,
     this.onSaveDmConfig,
@@ -48,7 +49,7 @@ class SendDanmakuPanel extends CommonTextPubPage {
 
 class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
   late final RxInt _mode;
-  late final RxInt _fontsize;
+  late final RxInt _fontSize;
   late final Rx<Color> _color;
 
   final List<Color> _colorList = [
@@ -72,7 +73,7 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
   void initState() {
     super.initState();
     _mode = (widget.dmConfig?.mode ?? 1).obs;
-    _fontsize = (widget.dmConfig?.fontsize ?? 25).obs;
+    _fontSize = (widget.dmConfig?.fontSize ?? 25).obs;
     _color = (widget.dmConfig?.color ?? Colors.white).obs;
     if (Pref.userInfoCache?.vipStatus == 1) {
       _colorList.add(Colors.transparent);
@@ -83,7 +84,7 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
   void dispose() {
     widget.onSaveDmConfig?.call((
       mode: _mode.value,
-      fontsize: _fontsize.value,
+      fontSize: _fontSize.value,
       color: _color.value,
     ));
     super.dispose();
@@ -178,44 +179,62 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
         ),
       ),
     ),
-    child: SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('弹幕字号', style: TextStyle(fontSize: 15)),
-              const SizedBox(width: 16),
-              _buildFontSizeItem(18, '小'),
-              const SizedBox(width: 5),
-              _buildFontSizeItem(25, '标准'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('弹幕样式', style: TextStyle(fontSize: 15)),
-              const SizedBox(width: 16),
-              _buildPositionItem(1, '滚动'),
-              const SizedBox(width: 5),
-              _buildPositionItem(5, '顶部'),
-              const SizedBox(width: 5),
-              _buildPositionItem(4, '底部'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('弹幕颜色', style: TextStyle(fontSize: 15)),
-              const SizedBox(width: 16),
-              _buildColorPanel,
-            ],
-          ),
-          SizedBox(height: 12 + MediaQuery.viewPaddingOf(context).bottom),
-        ],
+    child: ListView(
+      physics: const ClampingScrollPhysics(),
+      padding: .only(
+        top: 12,
+        bottom: 12 + MediaQuery.viewPaddingOf(context).bottom,
       ),
+      children: [
+        Row(
+          children: [
+            Text(
+              '弹幕字号',
+              style: TextStyle(
+                fontSize: 15,
+                color: themeData.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 16),
+            _buildFontSizeItem(18, '小'),
+            const SizedBox(width: 5),
+            _buildFontSizeItem(25, '标准'),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Text(
+              '弹幕样式',
+              style: TextStyle(
+                fontSize: 15,
+                color: themeData.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 16),
+            _buildPositionItem(1, '滚动'),
+            const SizedBox(width: 5),
+            _buildPositionItem(5, '顶部'),
+            const SizedBox(width: 5),
+            _buildPositionItem(4, '底部'),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '弹幕颜色',
+              style: TextStyle(
+                fontSize: 15,
+                color: themeData.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 16),
+            _buildColorPanel,
+          ],
+        ),
+      ],
     ),
   );
 
@@ -297,15 +316,15 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
     );
   }
 
-  Widget _buildFontSizeItem(int fontsize, String title) {
+  Widget _buildFontSizeItem(int fontSize, String title) {
     return Obx(
       () => Expanded(
         child: GestureDetector(
-          onTap: () => _fontsize.value = fontsize,
+          onTap: () => _fontSize.value = fontSize,
           child: Container(
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: _fontsize.value == fontsize
+              color: _fontSize.value == fontSize
                   ? themeData.colorScheme.secondaryContainer
                   : themeData.colorScheme.onInverseSurface,
               borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -314,7 +333,7 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
             child: Text(
               title,
               style: TextStyle(
-                color: _fontsize.value == fontsize
+                color: _fontSize.value == fontSize
                     ? themeData.colorScheme.onSecondaryContainer
                     : themeData.colorScheme.outline,
               ),
@@ -350,40 +369,33 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Form(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Listener(
-                onPointerUp: (event) {
-                  if (readOnly.value) {
-                    updatePanelType(PanelType.keyboard);
-                  }
-                },
-                child: Obx(
-                  () => TextField(
-                    controller: editController,
-                    autofocus: false,
-                    readOnly: readOnly.value,
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(100),
-                    ],
-                    onChanged: onChanged,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (value) {
-                      if (value.trim().isNotEmpty) {
-                        onPublish();
-                      }
-                    },
-                    focusNode: focusNode,
-                    decoration: InputDecoration(
-                      hintText: "输入弹幕内容",
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(
-                        fontSize: 15,
-                        color: themeData.colorScheme.outline,
-                      ),
+            child: Listener(
+              onPointerUp: (event) {
+                if (readOnly.value) {
+                  updatePanelType(PanelType.keyboard);
+                }
+              },
+              child: Obx(
+                () => TextField(
+                  controller: editController,
+                  autofocus: false,
+                  readOnly: readOnly.value,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(100),
+                  ],
+                  onChanged: onChanged,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: onSubmitted,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    hintText: "输入弹幕内容",
+                    border: InputBorder.none,
+                    hintStyle: TextStyle(
+                      fontSize: 15,
+                      color: themeData.colorScheme.outline,
                     ),
-                    style: themeData.textTheme.bodyLarge,
                   ),
+                  style: themeData.textTheme.bodyLarge,
                 ),
               ),
             ),
@@ -428,7 +440,7 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
         title: const Text('Color Picker'),
         content: SlideColorPicker(
           color: _color.value,
-          callback: (Color? color) {
+          onChanged: (Color? color) {
             if (color != null) {
               _color.value = color;
             }
@@ -449,16 +461,23 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
       progress: widget.progress,
       msg: editController.text,
       mode: _mode.value,
-      fontsize: _fontsize.value,
+      fontSize: _fontSize.value,
       color: isColorful ? null : _color.value.toARGB32() & 0xFFFFFF,
       colorful: isColorful,
     );
     SmartDialog.dismiss();
-    if (res['status']) {
+    if (res case Success(:final response)) {
       hasPub = true;
       Get.back();
       SmartDialog.showToast('发送成功');
-      widget.callback(
+      VideoDanmaku? extra;
+      if (response.dmid case final dmid?) {
+        extra = VideoDanmaku(
+          id: dmid,
+          mid: PlPlayerController.instance!.midHash,
+        );
+      }
+      widget.onSuccess(
         DanmakuContentItem(
           editController.text,
           color: isColorful ? Colors.white : _color.value,
@@ -469,14 +488,11 @@ class _SendDanmakuPanelState extends CommonTextPubPageState<SendDanmakuPanel> {
           },
           selfSend: true,
           isColorful: isColorful,
-          extra: VideoDanmaku(
-            id: res['dmid'],
-            mid: PlPlayerController.instance!.midHash,
-          ),
+          extra: extra,
         ),
       );
     } else {
-      SmartDialog.showToast('发送失败: ${res['msg']}');
+      res.toast();
     }
   }
 }

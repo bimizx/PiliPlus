@@ -1,28 +1,25 @@
+import 'dart:async';
 import 'dart:math';
 
-import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/common/widgets/pair.dart';
-import 'package:PiliPlus/http/init.dart';
+import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/http/sponsor_block.dart';
 import 'package:PiliPlus/models/common/sponsor_block/action_type.dart';
 import 'package:PiliPlus/models/common/sponsor_block/post_segment_model.dart';
 import 'package:PiliPlus/models/common/sponsor_block/segment_type.dart';
-import 'package:PiliPlus/models_new/sponsor_block/segment_item.dart';
 import 'package:PiliPlus/pages/common/slide/common_slide_page.dart';
 import 'package:PiliPlus/pages/video/controller.dart';
 import 'package:PiliPlus/pages/video/post_panel/popup_menu_text.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
-import 'package:PiliPlus/utils/storage_pref.dart';
-import 'package:dio/dio.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide Response;
+import 'package:get/get.dart';
 
 class PostPanel extends CommonSlidePage {
   const PostPanel({
@@ -108,36 +105,34 @@ class PostPanel extends CommonSlidePage {
               tooltip: '编辑',
               icon: const Icon(Icons.edit),
               onPressed: () async {
+                String initV = value;
                 final res = await showDialog<String>(
                   context: context,
-                  builder: (context) {
-                    String initV = value;
-                    return AlertDialog(
-                      content: TextFormField(
-                        initialValue: value,
-                        autofocus: true,
-                        onChanged: (value) => initV = value,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[\d:.]+')),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: Get.back,
-                          child: Text(
-                            '取消',
-                            style: TextStyle(
-                              color: theme.colorScheme.outline,
-                            ),
+                  builder: (context) => AlertDialog(
+                    content: TextFormField(
+                      initialValue: value,
+                      autofocus: true,
+                      onChanged: (value) => initV = value,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[\d:.]+')),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: Get.back,
+                        child: Text(
+                          '取消',
+                          style: TextStyle(
+                            color: theme.colorScheme.outline,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => Get.back(result: initV),
-                          child: const Text('确定'),
-                        ),
-                      ],
-                    );
-                  },
+                      ),
+                      TextButton(
+                        onPressed: () => Get.back(result: initV),
+                        child: const Text('确定'),
+                      ),
+                    ],
+                  ),
                 );
 
                 if (res != null) {
@@ -189,10 +184,9 @@ class _PostPanelState extends State<PostPanel>
   late final List<PostSegmentModel> list = videoDetailController.postList;
 
   late final double videoDuration =
-      plPlayerController.durationSeconds.value.inMilliseconds / 1000;
+      plPlayerController.duration.value.inMilliseconds / 1000;
 
-  double get currentPos =>
-      plPlayerController.position.value.inMilliseconds / 1000;
+  double currentPos() => plPlayerController.position.inMilliseconds / 1000;
 
   @override
   Widget buildPage(ThemeData theme) {
@@ -216,7 +210,7 @@ class _PostPanelState extends State<PostPanel>
                   PostSegmentModel(
                     segment: Pair(
                       first: 0,
-                      second: currentPos,
+                      second: currentPos(),
                     ),
                     category: SegmentType.sponsor,
                     actionType: ActionType.skip,
@@ -254,7 +248,7 @@ class _PostPanelState extends State<PostPanel>
 
   @override
   Widget buildList(ThemeData theme) {
-    if (list.isNullOrEmpty) {
+    if (list.isEmpty) {
       return errorWidget();
     }
     final bottom = MediaQuery.viewPaddingOf(context).bottom;
@@ -310,67 +304,24 @@ class _PostPanelState extends State<PostPanel>
 
   Future<void> _onPost() async {
     Get.back();
-    final res = await Request().post(
-      '${widget.videoDetailController.blockServer}/api/skipSegments',
-      data: {
-        'videoID': videoDetailController.bvid,
-        'cid': videoDetailController.cid.value.toString(),
-        'userID': Pref.blockUserID.toString(),
-        'userAgent': Constants.userAgent,
-        'videoDuration': videoDuration,
-        'segments': list
-            .map(
-              (item) => {
-                'segment': [
-                  item.segment.first,
-                  item.segment.second,
-                ],
-                'category': item.category.name,
-                'actionType': item.actionType.name,
-              },
-            )
-            .toList(),
-      },
-      options: Options(
-        followRedirects: true, // Defaults to true.
-        validateStatus: (int? status) {
-          return (status! >= 200 && status < 300) ||
-              const [400, 403, 429, 409] // reduce extra toast
-                  .contains(status);
-        },
-      ),
+    final res = await SponsorBlock.postSkipSegments(
+      bvid: videoDetailController.bvid,
+      cid: videoDetailController.cid.value,
+      videoDuration: videoDuration,
+      segments: list,
     );
 
-    if (res.statusCode == 200) {
+    if (res case Success(:final response)) {
       Get.back();
       SmartDialog.showToast('提交成功');
       list.clear();
-      if (res.data case List list) {
-        videoDetailController.handleSBData(
-          list.map((e) => SegmentItemModel.fromJson(e)).toList(),
-        );
-      }
-      if (videoDetailController.positionSubscription == null) {
+      videoDetailController.handleSBData(response);
+      if (videoDetailController.blockListener == null) {
         videoDetailController.initSkip();
       }
     } else {
-      SmartDialog.showToast('提交失败: ${_errMsg(res)}');
+      SmartDialog.showToast('提交失败: $res');
     }
-  }
-
-  String _errMsg(Response res) {
-    if (res.data case String e) {
-      if (e.isNotEmpty) {
-        return e;
-      }
-    }
-    return switch (res.statusCode) {
-      400 => '参数错误',
-      403 => '被自动审核机制拒绝',
-      429 => '重复提交太快',
-      409 => '重复提交',
-      _ => '${res.data}(${res.statusCode})',
-    };
   }
 
   Widget _buildItem(ThemeData theme, int index, PostSegmentModel item) {
@@ -398,7 +349,7 @@ class _PostPanelState extends State<PostPanel>
                   PostPanel.segmentWidget(
                     theme,
                     item: item,
-                    currentPos: () => currentPos,
+                    currentPos: currentPos,
                     videoDuration: videoDuration,
                   ),
                 Wrap(
@@ -407,7 +358,7 @@ class _PostPanelState extends State<PostPanel>
                   children: [
                     PopupMenuText(
                       title: '分类',
-                      initialValue: item.category,
+                      value: () => item.category,
                       onSelected: (e) {
                         bool flag = false;
                         if (item.category == SegmentType.exclusive_access ||
@@ -452,7 +403,7 @@ class _PostPanelState extends State<PostPanel>
                     ),
                     PopupMenuText(
                       title: '行为类别',
-                      initialValue: item.actionType,
+                      value: () => item.actionType,
                       onSelected: (e) {
                         bool flag = false;
                         if (item.actionType == ActionType.full) {
@@ -522,14 +473,14 @@ class _PostPanelState extends State<PostPanel>
                   await videoCtr.play();
                 }
                 final delay = start - seek;
-                if (delay > 0) {
-                  await Future.delayed(Duration(milliseconds: delay));
-                }
-                videoCtr.seek(
-                  Duration(
-                    milliseconds: (item.segment.second * 1000).round(),
-                  ),
+                Future<void> seekTo() => videoCtr.seek(
+                  Duration(milliseconds: (item.segment.second * 1000).round()),
                 );
+                if (delay > 0) {
+                  Timer(Duration(milliseconds: delay), seekTo);
+                } else {
+                  seekTo();
+                }
               }
             },
           ),

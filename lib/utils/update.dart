@@ -6,7 +6,6 @@ import 'package:PiliPlus/http/api.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/ua_type.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
-import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
@@ -16,7 +15,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
-abstract class Update {
+abstract final class Update {
   // 检查更新
   static Future<void> checkUpdate([bool isAuto = true]) async {
     if (kDebugMode) return;
@@ -35,9 +34,9 @@ abstract class Update {
         }
         return;
       }
-      int latest =
-          DateTime.parse(res.data[0]['created_at']).millisecondsSinceEpoch ~/
-          1000;
+      final data = res.data[0];
+      final int latest =
+          DateTime.parse(data['created_at']).millisecondsSinceEpoch ~/ 1000;
       if (BuildConfig.buildTime >= latest) {
         if (!isAuto) {
           SmartDialog.showToast('已是最新版本');
@@ -48,7 +47,7 @@ abstract class Update {
           builder: (context) {
             final ThemeData theme = Theme.of(context);
             Widget downloadBtn(String text, {String? ext}) => TextButton(
-              onPressed: () => onDownload(res.data[0], ext: ext),
+              onPressed: () => onDownload(data, ext: ext),
               child: Text(text),
             );
             return AlertDialog(
@@ -60,11 +59,11 @@ abstract class Update {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${res.data[0]['tag_name']}',
+                        '${data['tag_name']}',
                         style: const TextStyle(fontSize: 20),
                       ),
                       const SizedBox(height: 8),
-                      Text('${res.data[0]['body']}'),
+                      Text('${data['body']}'),
                       TextButton(
                         onPressed: () => PageUtils.launchURL(
                           '${Constants.sourceCodeUrl}/commits/main',
@@ -107,6 +106,7 @@ abstract class Update {
                   downloadBtn('zip', ext: 'zip'),
                   downloadBtn('exe', ext: 'exe'),
                 ] else if (Platform.isLinux) ...[
+                  downloadBtn('rpm', ext: 'rpm'),
                   downloadBtn('deb', ext: 'deb'),
                   downloadBtn('targz', ext: 'tar.gz'),
                 ] else
@@ -130,7 +130,7 @@ abstract class Update {
           for (Map<String, dynamic> i in data['assets']) {
             final String name = i['name'];
             if (name.contains(plat) &&
-                (ext.isNullOrEmpty ? true : name.endsWith(ext!))) {
+                (ext == null || ext.isEmpty ? true : name.endsWith(ext))) {
               PageUtils.launchURL(i['browser_download_url']);
               return;
             }

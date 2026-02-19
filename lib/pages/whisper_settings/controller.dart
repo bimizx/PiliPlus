@@ -36,11 +36,12 @@ class WhisperSettingsController
   Future<LoadingState<GetImSettingsReply>> customGetData() =>
       ImGrpc.getImSettings(type: imSettingType);
 
-  Future<bool> onSet(PbMap<int, Setting> settings) async {
+  Future<bool> onSet(Map<int, Setting> settings) async {
     final res = await ImGrpc.setImSettings(settings: settings);
     if (!res.isSuccess) {
       res.toast();
+      return false;
     }
-    return res.isSuccess;
+    return true;
   }
 }

@@ -2,6 +2,7 @@ import 'package:PiliPlus/grpc/bilibili/main/community/reply/v1.pb.dart'
     show ReplyInfo, DetailListReply, Mode;
 import 'package:PiliPlus/grpc/reply.dart';
 import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/pages/common/publish/publish_route.dart';
 import 'package:PiliPlus/pages/common/reply_controller.dart';
 import 'package:PiliPlus/pages/video/reply_new/view.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
@@ -9,11 +10,9 @@ import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:fixnum/fixnum.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
-import 'package:get/get_navigation/src/dialog/dialog_route.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 class VideoReplyReplyController extends ReplyController
@@ -102,6 +101,7 @@ class VideoReplyReplyController extends ReplyController
 
   ExtendedNestedScrollController? nestedController;
 
+  @pragma('vm:notify-debugger-on-exception')
   void jumpToItem(int index) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       animController.forward(from: 0);
@@ -115,9 +115,7 @@ class VideoReplyReplyController extends ReplyController
             scrollController.jumpTo(offset);
           }
         }
-      } catch (_) {
-        if (kDebugMode) rethrow;
-      }
+      } catch (_) {}
     });
   }
 
@@ -158,9 +156,8 @@ class VideoReplyReplyController extends ReplyController
 
   @override
   void onReply(
-    BuildContext context, {
+    ReplyInfo? replyItem, {
     int? oid,
-    ReplyInfo? replyItem,
     int? replyType,
     int? index,
   }) {
@@ -175,9 +172,9 @@ class VideoReplyReplyController extends ReplyController
     final root = replyItem.id.toInt();
     final key = oid + root;
 
-    Navigator.of(context)
+    Get.key.currentState!
         .push(
-          GetDialogRoute(
+          PublishRoute(
             pageBuilder: (buildContext, animation, secondaryAnimation) {
               return ReplyPage(
                 hint: hint,
@@ -194,18 +191,6 @@ class VideoReplyReplyController extends ReplyController
                     savedReplies[key] = reply.toList();
                   }
                 },
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionBuilder: (context, animation, secondaryAnimation, child) {
-              return SlideTransition(
-                position: animation.drive(
-                  Tween(
-                    begin: const Offset(0.0, 1.0),
-                    end: Offset.zero,
-                  ).chain(CurveTween(curve: Curves.linear)),
-                ),
-                child: child,
               );
             },
           ),

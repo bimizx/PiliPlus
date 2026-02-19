@@ -2,20 +2,26 @@ import 'dart:io';
 
 import 'package:PiliPlus/build_config.dart';
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/back_detector.dart';
 import 'package:PiliPlus/common/widgets/custom_toast.dart';
-import 'package:PiliPlus/common/widgets/mouse_back.dart';
+import 'package:PiliPlus/common/widgets/scale_app.dart';
+import 'package:PiliPlus/common/widgets/scroll_behavior.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/models/common/theme/theme_color_type.dart';
-import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/router/app_pages.dart';
 import 'package:PiliPlus/services/account_service.dart';
-import 'package:PiliPlus/services/logger.dart';
+import 'package:PiliPlus/services/download/download_service.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
-import 'package:PiliPlus/utils/cache_manage.dart';
+import 'package:PiliPlus/utils/cache_manager.dart';
 import 'package:PiliPlus/utils/calc_window_position.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/json_file_handler.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/path_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
@@ -24,9 +30,7 @@ import 'package:PiliPlus/utils/theme_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:catcher_2/catcher_2.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -41,9 +45,48 @@ import 'package:window_manager/window_manager.dart' hide calcWindowPosition;
 
 WebViewEnvironment? webViewEnvironment;
 
+Future<void> _initDownPath() async {
+  if (PlatformUtils.isDesktop) {
+    final customDownPath = Pref.downloadPath;
+    if (customDownPath != null && customDownPath.isNotEmpty) {
+      try {
+        final dir = Directory(customDownPath);
+        if (!dir.existsSync()) {
+          await dir.create(recursive: true);
+        }
+        downloadPath = customDownPath;
+      } catch (e) {
+        downloadPath = defDownloadPath;
+        await GStorage.setting.delete(SettingBoxKey.downloadPath);
+        if (kDebugMode) {
+          debugPrint('download path error: $e');
+        }
+      }
+    } else {
+      downloadPath = defDownloadPath;
+    }
+  } else if (Platform.isAndroid) {
+    final externalStorageDirPath = (await getExternalStorageDirectory())?.path;
+    downloadPath = externalStorageDirPath != null
+        ? path.join(externalStorageDirPath, PathUtils.downloadDir)
+        : defDownloadPath;
+  } else {
+    downloadPath = defDownloadPath;
+  }
+}
+
+Future<void> _initTmpPath() async {
+  tmpDirPath = (await getTemporaryDirectory()).path;
+}
+
+Future<void> _initAppPath() async {
+  appSupportDirPath = (await getApplicationSupportDirectory()).path;
+}
+
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  ScaledWidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  await _initAppPath();
   try {
     await GStorage.init();
   } catch (e) {
@@ -51,12 +94,16 @@ void main() async {
     if (kDebugMode) debugPrint('GStorage init error: $e');
     exit(0);
   }
-  Get.lazyPut(AccountService.new);
+  ScaledWidgetsFlutterBinding.instance.scaleFactor = Pref.uiScale;
+  await Future.wait([_initDownPath(), _initTmpPath()]);
+  Get
+    ..lazyPut(AccountService.new)
+    ..lazyPut(DownloadService.new);
   HttpOverrides.global = _CustomHttpOverrides();
 
-  CacheManage.autoClearCache();
+  CacheManager.autoClearCache();
 
-  if (Utils.isMobile) {
+  if (PlatformUtils.isMobile) {
     await Future.wait([
       SystemChrome.setPreferredOrientations(
         [
@@ -69,14 +116,11 @@ void main() async {
       ),
       setupServiceLocator(),
     ]);
-  }
-
-  if (Platform.isWindows) {
+  } else if (Platform.isWindows) {
     if (await WebViewEnvironment.getAvailableVersion() != null) {
-      final dir = await getApplicationSupportDirectory();
       webViewEnvironment = await WebViewEnvironment.create(
         settings: WebViewEnvironmentSettings(
-          userDataFolder: path.join(dir.path, 'flutter_inappwebview'),
+          userDataFolder: path.join(appSupportDirPath, 'flutter_inappwebview'),
         ),
       );
     }
@@ -85,15 +129,13 @@ void main() async {
   Request();
   Request.setCookie();
   RequestUtils.syncHistoryStatus();
-  if (Utils.isMobile) {
-    PiliScheme.init();
-  }
 
   SmartDialog.config.toast = SmartConfigToast(
     displayType: SmartToastType.onlyRefresh,
   );
 
-  if (Utils.isMobile) {
+  if (PlatformUtils.isMobile) {
+    PiliScheme.init();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -103,10 +145,24 @@ void main() async {
         systemNavigationBarContrastEnforced: false,
       ),
     );
-  } else if (Utils.isDesktop) {
+    if (Platform.isAndroid) {
+      FlutterDisplayMode.supported.then((mode) {
+        final String? storageDisplay = GStorage.setting.get(
+          SettingBoxKey.displayMode,
+        );
+        DisplayMode? displayMode;
+        if (storageDisplay != null) {
+          displayMode = mode.firstWhereOrNull(
+            (e) => e.toString() == storageDisplay,
+          );
+        }
+        FlutterDisplayMode.setPreferredMode(displayMode ?? DisplayMode.auto);
+      });
+    }
+  } else if (PlatformUtils.isDesktop) {
     await windowManager.ensureInitialized();
 
-    WindowOptions windowOptions = WindowOptions(
+    final windowOptions = WindowOptions(
       minimumSize: const Size(400, 720),
       skipTaskbar: false,
       titleBarStyle: Pref.showWindowTitleBar
@@ -125,46 +181,44 @@ void main() async {
     });
   }
 
+  if (Pref.dynamicColor) {
+    await MyApp.initPlatformState();
+  }
+
   if (Pref.enableLog) {
     // 异常捕获 logo记录
-    String buildConfig =
-        '''\n
-Build Time: ${DateFormatUtils.format(BuildConfig.buildTime, format: DateFormatUtils.longFormatDs)}
-Commit Hash: ${BuildConfig.commitHash}''';
+    final customParameters = {
+      'BuildConfig':
+          '\nBuild Time: ${DateFormatUtils.format(BuildConfig.buildTime, format: DateFormatUtils.longFormatDs)}\n'
+          'Commit Hash: ${BuildConfig.commitHash}',
+    };
+    final fileHandler = await JsonFileHandler.init();
     final Catcher2Options debugConfig = Catcher2Options(
       SilentReportMode(),
       [
-        FileHandler(await LoggerUtils.getLogsPath()),
+        ?fileHandler,
         ConsoleHandler(
           enableDeviceParameters: false,
           enableApplicationParameters: false,
           enableCustomParameters: true,
         ),
       ],
-      customParameters: {
-        'BuildConfig': buildConfig,
-      },
+      customParameters: customParameters,
     );
 
     final Catcher2Options releaseConfig = Catcher2Options(
       SilentReportMode(),
       [
-        FileHandler(await LoggerUtils.getLogsPath()),
-        ConsoleHandler(
-          enableCustomParameters: true,
-        ),
+        ?fileHandler,
+        ConsoleHandler(enableCustomParameters: true),
       ],
-      customParameters: {
-        'BuildConfig': buildConfig,
-      },
+      customParameters: customParameters,
     );
 
     Catcher2(
       debugConfig: debugConfig,
       releaseConfig: releaseConfig,
-      runAppFunction: () {
-        runApp(const MyApp());
-      },
+      rootWidget: const MyApp(),
     );
   } else {
     runApp(const MyApp());
@@ -174,171 +228,162 @@ Commit Hash: ${BuildConfig.commitHash}''';
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static ColorScheme? _light, _dark;
+
   static ThemeData? darkThemeData;
+
+  static void _onBack() {
+    if (SmartDialog.checkExist()) {
+      SmartDialog.dismiss();
+      return;
+    }
+
+    final route = Get.routing.route;
+    if (route is GetPageRoute) {
+      if (route.popDisposition == .doNotPop) {
+        route.onPopInvokedWithResult(false, null);
+        return;
+      }
+    }
+
+    final navigator = Get.key.currentState;
+    if (navigator?.canPop() ?? false) {
+      navigator!.pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    Color brandColor = colorThemeTypes[Pref.customColor].color;
-    bool isDynamicColor = Pref.dynamicColor;
-    FlexSchemeVariant variant = FlexSchemeVariant.values[Pref.schemeVariant];
+    final dynamicColor = Pref.dynamicColor && _light != null && _dark != null;
+    late final brandColor = colorThemeTypes[Pref.customColor].color;
+    late final variant = Pref.schemeVariant;
+    return GetMaterialApp(
+      title: Constants.appName,
+      theme: ThemeUtils.getThemeData(
+        colorScheme: dynamicColor
+            ? _light!
+            : brandColor.asColorSchemeSeed(variant, .light),
+        isDynamic: dynamicColor,
+      ),
+      darkTheme: ThemeUtils.getThemeData(
+        isDark: true,
+        colorScheme: dynamicColor
+            ? _dark!
+            : brandColor.asColorSchemeSeed(variant, .dark),
+        isDynamic: dynamicColor,
+      ),
+      themeMode: Pref.themeMode,
+      localizationsDelegates: const [
+        GlobalCupertinoLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      locale: const Locale("zh", "CN"),
+      fallbackLocale: const Locale("zh", "CN"),
+      supportedLocales: const [Locale("zh", "CN"), Locale("en", "US")],
+      initialRoute: '/',
+      getPages: Routes.getPages,
+      defaultTransition: Pref.pageTransition,
+      builder: FlutterSmartDialog.init(
+        toastBuilder: (msg) => CustomToast(msg: msg),
+        loadingBuilder: (msg) => LoadingWidget(msg: msg),
+        builder: _builder,
+      ),
+      navigatorObservers: [
+        PageUtils.routeObserver,
+        FlutterSmartDialog.observer,
+      ],
+      scrollBehavior: PlatformUtils.isDesktop
+          ? const CustomScrollBehavior(desktopDragDevices)
+          : null,
+    );
+  }
 
-    // 强制设置高帧率
-    if (Platform.isAndroid) {
-      late List<DisplayMode> modes;
-      FlutterDisplayMode.supported.then((value) {
-        modes = value;
-        final String? storageDisplay = GStorage.setting.get(
-          SettingBoxKey.displayMode,
-        );
-        DisplayMode? displayMode;
-        if (storageDisplay != null) {
-          displayMode = modes.firstWhereOrNull(
-            (e) => e.toString() == storageDisplay,
-          );
+  static Widget _builder(BuildContext context, Widget? child) {
+    final uiScale = Pref.uiScale;
+    final mediaQuery = MediaQuery.of(context);
+    final textScaler = TextScaler.linear(Pref.defaultTextScale);
+    if (uiScale != 1.0) {
+      child = MediaQuery(
+        data: mediaQuery.copyWith(
+          textScaler: textScaler,
+          size: mediaQuery.size / uiScale,
+          padding: mediaQuery.padding / uiScale,
+          viewInsets: mediaQuery.viewInsets / uiScale,
+          viewPadding: mediaQuery.viewPadding / uiScale,
+          devicePixelRatio: mediaQuery.devicePixelRatio * uiScale,
+        ),
+        child: child!,
+      );
+    } else {
+      child = MediaQuery(
+        data: mediaQuery.copyWith(textScaler: textScaler),
+        child: child!,
+      );
+    }
+    if (PlatformUtils.isDesktop) {
+      return BackDetector(
+        onBack: _onBack,
+        child: child,
+      );
+    }
+    return child;
+  }
+
+  /// from [DynamicColorBuilderState.initPlatformState]
+  static Future<bool> initPlatformState() async {
+    if (_light != null || _dark != null) return true;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      final corePalette = await DynamicColorPlugin.getCorePalette();
+
+      if (corePalette != null) {
+        if (kDebugMode) {
+          debugPrint('dynamic_color: Core palette detected.');
         }
-        displayMode ??= DisplayMode.auto;
-        FlutterDisplayMode.setPreferredMode(displayMode);
-      });
+        _light = corePalette.toColorScheme();
+        _dark = corePalette.toColorScheme(brightness: Brightness.dark);
+        return true;
+      }
+    } on PlatformException {
+      if (kDebugMode) {
+        debugPrint('dynamic_color: Failed to obtain core palette.');
+      }
     }
 
-    return DynamicColorBuilder(
-      builder: ((ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        ColorScheme? lightColorScheme;
-        ColorScheme? darkColorScheme;
-        if (lightDynamic != null && darkDynamic != null && isDynamicColor) {
-          // dynamic取色成功
-          lightColorScheme = lightDynamic.harmonized();
-          darkColorScheme = darkDynamic.harmonized();
-        } else {
-          // dynamic取色失败，采用品牌色
-          lightColorScheme = SeedColorScheme.fromSeeds(
-            primaryKey: brandColor,
-            brightness: Brightness.light,
-            variant: variant,
-            // dynamicSchemeVariant: dynamicSchemeVariant,
-            // tones: FlexTones.soft(Brightness.light),
-          );
-          darkColorScheme = SeedColorScheme.fromSeeds(
-            primaryKey: brandColor,
-            brightness: Brightness.dark,
-            variant: variant,
-            // dynamicSchemeVariant: dynamicSchemeVariant,
-            // tones: FlexTones.soft(Brightness.dark),
-          );
+    try {
+      final Color? accentColor = await DynamicColorPlugin.getAccentColor();
+
+      if (accentColor != null) {
+        if (kDebugMode) {
+          debugPrint('dynamic_color: Accent color detected.');
         }
-
-        // 图片缓存
-        // PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;
-        return GetMaterialApp(
-          title: Constants.appName,
-          theme: ThemeUtils.getThemeData(
-            colorScheme: lightColorScheme,
-            isDynamic: lightDynamic != null && isDynamicColor,
-            variant: variant,
-          ),
-          darkTheme: ThemeUtils.getThemeData(
-            colorScheme: darkColorScheme,
-            isDynamic: darkDynamic != null && isDynamicColor,
-            isDark: true,
-            variant: variant,
-          ),
-          themeMode: Pref.themeMode,
-          localizationsDelegates: const [
-            GlobalCupertinoLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-          ],
-          locale: const Locale("zh", "CN"),
-          supportedLocales: const [Locale("zh", "CN"), Locale("en", "US")],
-          fallbackLocale: const Locale("zh", "CN"),
-          getPages: Routes.getPages,
-          initialRoute: '/',
-          builder: FlutterSmartDialog.init(
-            toastBuilder: (String msg) => CustomToast(msg: msg),
-            loadingBuilder: (msg) => LoadingWidget(msg: msg),
-            builder: (context, child) {
-              child = MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(Pref.defaultTextScale),
-                ),
-                child: child!,
-              );
-              if (Utils.isDesktop) {
-                void onBack() {
-                  if (SmartDialog.checkExist()) {
-                    SmartDialog.dismiss();
-                    return;
-                  }
-
-                  if (Get.isDialogOpen ?? Get.isBottomSheetOpen ?? false) {
-                    Get.back();
-                    return;
-                  }
-
-                  final plCtr = PlPlayerController.instance;
-                  if (plCtr != null) {
-                    if (plCtr.isFullScreen.value == true) {
-                      plCtr
-                        ..triggerFullScreen(status: false)
-                        ..controlsLock.value = false;
-                      return;
-                    }
-
-                    if (plCtr.isDesktopPip) {
-                      plCtr.exitDesktopPip().whenComplete(
-                        () => plCtr.initialFocalPoint = Offset.zero,
-                      );
-                      return;
-                    }
-                  }
-
-                  Get.back();
-                }
-
-                return Shortcuts(
-                  shortcuts: {
-                    LogicalKeySet(LogicalKeyboardKey.escape):
-                        VoidCallbackIntent(onBack),
-                  },
-                  child: MouseBackDetector(
-                    onTapDown: onBack,
-                    child: child,
-                  ),
-                );
-              }
-              return child;
-            },
-          ),
-          navigatorObservers: [
-            FlutterSmartDialog.observer,
-            PageUtils.routeObserver,
-          ],
-          scrollBehavior: const MaterialScrollBehavior().copyWith(
-            scrollbars: false,
-            dragDevices: {
-              PointerDeviceKind.touch,
-              PointerDeviceKind.stylus,
-              PointerDeviceKind.invertedStylus,
-              PointerDeviceKind.trackpad,
-              PointerDeviceKind.unknown,
-              if (Utils.isDesktop) PointerDeviceKind.mouse,
-            },
-          ),
-        );
-      }),
-    );
+        final variant = Pref.schemeVariant;
+        _light = accentColor.asColorSchemeSeed(variant, .light);
+        _dark = accentColor.asColorSchemeSeed(variant, .dark);
+        return true;
+      }
+    } on PlatformException {
+      if (kDebugMode) {
+        debugPrint('dynamic_color: Failed to obtain accent color.');
+      }
+    }
+    if (kDebugMode) {
+      debugPrint('dynamic_color: Dynamic color not detected on this device.');
+    }
+    GStorage.setting.put(SettingBoxKey.dynamicColor, false);
+    return false;
   }
 }
 
 class _CustomHttpOverrides extends HttpOverrides {
-  final badCertificateCallback = kDebugMode || Pref.badCertificateCallback;
-
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    final client = super.createHttpClient(context)
-      // ..maxConnectionsPerHost = 32
-      ..idleTimeout = const Duration(seconds: 15);
-    if (badCertificateCallback) {
+    final client = super.createHttpClient(context);
+    // ..maxConnectionsPerHost = 32
+    /// The default value is 15 seconds.
+    //   ..idleTimeout = const Duration(seconds: 15);
+    if (kDebugMode || Pref.badCertificateCallback) {
       client.badCertificateCallback = (cert, host, port) => true;
     }
     return client;

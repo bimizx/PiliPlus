@@ -1,6 +1,6 @@
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space_cheese/item.dart';
 import 'package:PiliPlus/pages/fav/cheese/controller.dart';
@@ -53,8 +53,8 @@ class _FavCheesePageState extends State<FavCheesePage>
   ) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -68,14 +68,14 @@ class _FavCheesePageState extends State<FavCheesePage>
                       context: context,
                       title: '确定取消收藏该课堂？',
                       onConfirm: () =>
-                          _controller.onRemove(index, item.seasonId),
+                          _controller.onRemove(index, item.seasonId!),
                     ),
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

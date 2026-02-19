@@ -14,7 +14,7 @@ import 'package:PiliPlus/pages/video/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/pgc/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/pgc/widgets/pgc_panel.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/widgets/action_item.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:flutter/material.dart';
@@ -91,12 +91,12 @@ class _PgcIntroPageState extends State<PgcIntroPage> {
       ),
     );
     if (!introController.isPgc) {
-      final breif = _buildBreif(item);
-      if (breif != null) {
+      final brief = _buildBrief(item);
+      if (brief != null) {
         sliver = SliverMainAxisGroup(
           slivers: [
             sliver,
-            breif,
+            brief,
           ],
         );
       }
@@ -109,7 +109,7 @@ class _PgcIntroPageState extends State<PgcIntroPage> {
     );
   }
 
-  Widget? _buildBreif(PgcInfoModel item) {
+  Widget? _buildBrief(PgcInfoModel item) {
     final img = item.brief?.img;
     if (img != null && img.isNotEmpty) {
       final maxWidth = widget.maxWidth - 24;
@@ -126,7 +126,7 @@ class _PgcIntroPageState extends State<PgcIntroPage> {
           slivers: img.map((e) {
             return SliverToBoxAdapter(
               child: NetworkImgLayer(
-                radius: 0,
+                type: .emote,
                 src: e.url,
                 width: imgWidth,
                 height: imgWidth * e.aspectRatio,
@@ -144,20 +144,15 @@ class _PgcIntroPageState extends State<PgcIntroPage> {
       clipBehavior: Clip.none,
       children: [
         GestureDetector(
-          onTap: () {
-            videoDetailCtr.onViewImage();
-            PageUtils.imageView(
-              imgList: [SourceModel(url: item.cover!)],
-              onDismissed: videoDetailCtr.onDismissed,
-            );
-          },
+          onTap: () => PageUtils.imageView(
+            imgList: [SourceModel(url: item.cover!)],
+          ),
           child: Hero(
             tag: item.cover!,
             child: NetworkImgLayer(
               width: 115,
               height: 153,
               src: item.cover!,
-              semanticsLabel: '封面',
             ),
           ),
         ),
@@ -350,9 +345,9 @@ class _PgcIntroPageState extends State<PgcIntroPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name),
-                  if (role?.isNotEmpty == true)
+                  if (role != null && role.isNotEmpty)
                     Text(
-                      role!,
+                      role,
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.outline,

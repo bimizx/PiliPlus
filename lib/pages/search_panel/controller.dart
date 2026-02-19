@@ -1,3 +1,5 @@
+import 'dart:async' show StreamSubscription;
+
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/models/common/search/article_search_type.dart';
@@ -7,7 +9,7 @@ import 'package:PiliPlus/models/common/search/video_search_type.dart';
 import 'package:PiliPlus/models/search/result.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
 import 'package:PiliPlus/pages/search_result/controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
@@ -54,25 +56,41 @@ class SearchPanelController<R extends SearchNumData<T>, T>
     onReload().whenComplete(SmartDialog.dismiss);
   }
 
+  StreamSubscription? _listener;
+
+  void cancelListener() {
+    _listener?.cancel();
+  }
+
   @override
   void onInit() {
     super.onInit();
     try {
-      searchResultController = Get.find<SearchResultController>(tag: tag)
-        ..toTopIndex.listen((index) {
-          if (index == searchType.index) {
-            scrollController.animToTop();
-          }
-        });
+      searchResultController = Get.find<SearchResultController>(tag: tag);
+      _listener = searchResultController!.toTopIndex.listen((index) {
+        if (index == searchType.index) {
+          scrollController.animToTop();
+        }
+      });
     } catch (_) {}
     queryData();
   }
 
   @override
   List<T>? getDataList(R response) {
-    searchResultController?.count[searchType.index] = response.numResults ?? 0;
     return response.list;
   }
+
+  @override
+  bool customHandleResponse(bool isRefresh, Success<R> response) {
+    if (isRefresh) {
+      searchResultController?.count[searchType.index] =
+          response.response.numResults ?? 0;
+    }
+    return false;
+  }
+
+  String? gaiaVtoken;
 
   @override
   Future<LoadingState<R>> customGetData() => SearchHttp.searchByType<R>(
@@ -87,6 +105,11 @@ class SearchPanelController<R extends SearchNumData<T>, T>
     categoryId: articleZoneType?.value.categoryId,
     pubBegin: pubBegin,
     pubEnd: pubEnd,
+    gaiaVtoken: gaiaVtoken,
+    onSuccess: (String gaiaVtoken) {
+      this.gaiaVtoken = gaiaVtoken;
+      queryData(page == 1);
+    },
   );
 
   @override

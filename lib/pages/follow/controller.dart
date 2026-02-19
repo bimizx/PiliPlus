@@ -1,16 +1,15 @@
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/member.dart';
 import 'package:PiliPlus/models/member/tags.dart';
-import 'package:PiliPlus/services/account_service.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
 class FollowController extends GetxController with GetTickerProviderStateMixin {
-  late int mid;
-  String? name;
-  late bool isOwner;
+  late final int mid;
+  late final RxnString name;
+  late final bool isOwner;
 
   late final Rx<LoadingState> followState = LoadingState.loading().obs;
   late final RxList<MemberTagItemModel> tabs = <MemberTagItemModel>[].obs;
@@ -19,22 +18,33 @@ class FollowController extends GetxController with GetTickerProviderStateMixin {
   @override
   void onInit() {
     super.onInit();
-    int ownerMid = Accounts.main.mid;
-    final mid = Get.parameters['mid'];
-    this.mid = mid != null ? int.parse(mid) : ownerMid;
+    final Map? args = Get.arguments;
+    final ownerMid = Accounts.main.mid;
+    final int? mid = args?['mid'];
+    this.mid = mid ?? ownerMid;
     isOwner = ownerMid == this.mid;
-    name = Get.parameters['name'] ?? Get.find<AccountService>().name.value;
     if (isOwner) {
       queryFollowUpTags();
+    } else {
+      final String? name = args?['name'];
+      this.name = RxnString(name);
+      if (name == null) {
+        _queryUserName();
+      }
     }
   }
 
+  Future<void> _queryUserName() async {
+    final res = await MemberHttp.memberCardInfo(mid: mid);
+    name.value = res.dataOrNull?.card?.name;
+  }
+
   Future<void> queryFollowUpTags() async {
-    var res = await MemberHttp.followUpTags();
-    if (res.isSuccess) {
+    final res = await MemberHttp.followUpTags();
+    if (res case Success(:final response)) {
       tabs
         ..assign(MemberTagItemModel(name: '全部关注'))
-        ..addAll(res.data);
+        ..addAll(response);
       int initialIndex = 0;
       if (tabController != null) {
         initialIndex = tabController!.index.clamp(0, tabs.length - 1);
@@ -59,34 +69,34 @@ class FollowController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> onCreateTag(String tagName) async {
     final res = await MemberHttp.createFollowTag(tagName);
-    if (res['status']) {
+    if (res.isSuccess) {
       followState.value = LoadingState.loading();
       queryFollowUpTags();
       SmartDialog.showToast('创建成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 
   Future<void> onUpdateTag(MemberTagItemModel item, String tagName) async {
-    final res = await MemberHttp.updateFollowTag(item.tagid, tagName);
-    if (res['status']) {
+    final res = await MemberHttp.updateFollowTag(item.tagid!, tagName);
+    if (res.isSuccess) {
       item.name = tagName;
       tabs.refresh();
       SmartDialog.showToast('修改成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 
-  Future<void> onDelTag(int? tagid) async {
+  Future<void> onDelTag(int tagid) async {
     final res = await MemberHttp.delFollowTag(tagid);
-    if (res['status']) {
+    if (res.isSuccess) {
       followState.value = LoadingState.loading();
       queryFollowUpTags();
       SmartDialog.showToast('删除成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 }

@@ -38,8 +38,8 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
   ) {
     return switch (loadingState) {
       Loading() => loadingWidget,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -69,28 +69,26 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                     ),
                   ),
                   Expanded(
-                    child: Padding(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.all(12),
-                      child: SingleChildScrollView(
-                        child: Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: response!
-                              .map(
-                                (e) => SearchText(
-                                  text: e.keyword,
-                                  onTap: (keyword) {
-                                    showConfirmDialog(
-                                      context: context,
-                                      title: '删除屏蔽词？',
-                                      content: '该屏蔽词将不再生效',
-                                      onConfirm: () => _controller.onRemove(e),
-                                    );
-                                  },
-                                ),
-                              )
-                              .toList(),
-                        ),
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: response
+                            .map(
+                              (e) => SearchText(
+                                text: e.keyword,
+                                onTap: (keyword) {
+                                  showConfirmDialog(
+                                    context: context,
+                                    title: '删除屏蔽词？',
+                                    content: '该屏蔽词将不再生效',
+                                    onConfirm: () => _controller.onRemove(e),
+                                  );
+                                },
+                              ),
+                            )
+                            .toList(),
                       ),
                     ),
                   ),
@@ -110,12 +108,13 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                   ),
                 ],
               )
-            : SizedBox.expand(
+            : Align(
+                alignment: const Alignment(0, -0.5),
                 child: Column(
+                  spacing: 6,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Spacer(),
                     SvgPicture.asset("assets/images/error.svg", height: 156),
-                    const SizedBox(height: 6),
                     const Text(
                       '还未添加屏蔽词',
                       style: TextStyle(
@@ -123,9 +122,7 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
                     const Text('添加后，将不再接受包含屏蔽词的消息'),
-                    const SizedBox(height: 6),
                     FilledButton.tonal(
                       onPressed: _onAdd,
                       style: FilledButton.styleFrom(
@@ -139,11 +136,10 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                         ],
                       ),
                     ),
-                    const Spacer(flex: 2),
                   ],
                 ),
               ),
-      Error(:var errMsg) => scrollErrorWidget(
+      Error(:final errMsg) => scrollErrorWidget(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),
@@ -183,6 +179,7 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                   ),
                   GestureDetector(
                     onTap: Get.back,
+                    behavior: HitTestBehavior.opaque,
                     child: Icon(
                       Icons.clear,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -197,9 +194,10 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: '请输入',
+                  visualDensity: .standard,
                   hintStyle: const TextStyle(fontSize: 14),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
+                    horizontal: 12,
                     vertical: 6,
                   ),
                   border: const OutlineInputBorder(

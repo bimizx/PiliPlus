@@ -288,7 +288,7 @@ class _BounceMarqueeRender extends MarqueeRender {
         context.clipRectAndPaint(rect, clipBehavior, rect, paintChild);
       }
     } else {
-      paintCenter(context, offset);
+      context.paintChild(child!, offset);
     }
   }
 }
@@ -348,7 +348,7 @@ class _NormalMarqueeRender extends MarqueeRender {
         context.clipRectAndPaint(rect, clipBehavior, rect, paintChild);
       }
     } else {
-      paintCenter(context, offset);
+      context.paintChild(child, offset);
     }
   }
 }
@@ -399,12 +399,12 @@ class _MarqueeSimulation extends Simulation {
 class ContextSingleTicker implements TickerProvider {
   Ticker? _ticker;
   BuildContext context;
-  final bool autoStart;
+  final ValueGetter<bool>? autoStart;
 
-  ContextSingleTicker(this.context, {this.autoStart = true});
+  ContextSingleTicker(this.context, {this.autoStart});
 
   void initStart() {
-    if (autoStart) {
+    if (autoStart?.call() ?? true) {
       _ticker?.start();
     }
   }
@@ -448,7 +448,7 @@ class ContextSingleTicker implements TickerProvider {
       onTick,
       debugLabel: kDebugMode ? 'created by ${describeIdentity(this)}' : null,
     );
-    _tickerModeNotifier = TickerMode.getNotifier(context)
+    _tickerModeNotifier = TickerMode.getValuesNotifier(context)
       ..addListener(updateTicker);
     updateTicker(); // Sets _ticker.mute correctly.
     return _ticker!;
@@ -467,9 +467,15 @@ class ContextSingleTicker implements TickerProvider {
     _tickerModeNotifier = null;
   }
 
-  ValueListenable<bool>? _tickerModeNotifier;
+  ValueListenable<TickerModeData>? _tickerModeNotifier;
 
-  void updateTicker() => _ticker?.muted = !_tickerModeNotifier!.value;
+  void updateTicker() {
+    if (_tickerModeNotifier != null && _ticker != null) {
+      final TickerModeData values = _tickerModeNotifier!.value;
+      _ticker!.muted = !values.enabled;
+      _ticker!.forceFrames = values.forceFrames;
+    }
+  }
 
   set muted(bool value) => _ticker?.muted = value;
 }

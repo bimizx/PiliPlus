@@ -41,6 +41,7 @@ class _MemberSearchPageState extends State<MemberSearchPage> {
           textAlignVertical: TextAlignVertical.center,
           decoration: InputDecoration(
             hintText: '搜索',
+            visualDensity: .standard,
             border: InputBorder.none,
             suffixIcon: IconButton(
               tooltip: '清空',
@@ -113,14 +114,11 @@ class _MemberSearchPageState extends State<MemberSearchPage> {
             Obx(
               () => _controller.hasData.value
                   ? const SizedBox.shrink()
-                  : FractionallySizedBox(
-                      heightFactor: 0.5,
-                      widthFactor: 1.0,
-                      child: Center(
-                        child: Text(
-                          '搜索「${_controller.uname}」的动态、视频',
-                          textAlign: TextAlign.center,
-                        ),
+                  : Align(
+                      alignment: const Alignment(0, -0.5),
+                      child: Text(
+                        '搜索「${_controller.uname}」的动态、视频',
+                        textAlign: TextAlign.center,
                       ),
                     ),
             ),

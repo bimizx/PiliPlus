@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/common/widgets/video_card/video_card_h.dart';
 import 'package:PiliPlus/common/widgets/view_sliver_safe_area.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -40,7 +42,7 @@ class _PopularSeriesPageState extends State<PopularSeriesPage> with GridMixin {
       body: refreshIndicator(
         onRefresh: _controller.onRefresh,
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: ReloadScrollPhysics(controller: _controller),
           slivers: [
             ViewSliverSafeArea(
               sliver: Obx(() => _buildBody(_controller.loadingState.value)),
@@ -55,9 +57,9 @@ class _PopularSeriesPageState extends State<PopularSeriesPage> with GridMixin {
     switch (value) {
       case Loading():
         return gridSkeleton;
-      case Success<List<HotVideoItemModel>?>(:var response):
+      case Success<List<HotVideoItemModel>?>(:final response):
         Widget sliver;
-        if (response != null && response.isNotEmpty == true) {
+        if (response != null && response.isNotEmpty) {
           sliver = SliverGrid.builder(
             gridDelegate: gridDelegate,
             itemCount: response.length,
@@ -95,7 +97,7 @@ class _PopularSeriesPageState extends State<PopularSeriesPage> with GridMixin {
           );
         }
         return sliver;
-      case Error(:var errMsg):
+      case Error(:final errMsg):
         return HttpError(
           errMsg: errMsg,
           onReload: _controller.onReload,
@@ -125,50 +127,44 @@ class _PopularSeriesPageState extends State<PopularSeriesPage> with GridMixin {
         );
         showDialog(
           context: context,
-          builder: (context) {
-            return Dialog(
-              clipBehavior: Clip.hardEdge,
-              child: SizedBox(
-                width: width,
-                height: width,
-                child: ListView.builder(
-                  controller: controller,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  itemCount: seriesList.length,
-                  itemExtent: 44,
-                  itemBuilder: (context, index) {
-                    final item = seriesList[index];
-                    final isCurr = index == currIndex;
-                    return ListTile(
-                      dense: true,
-                      minTileHeight: 44,
-                      tileColor: isCurr
-                          ? Theme.of(context).highlightColor
-                          : null,
-                      onTap: () {
-                        Get.back();
-                        if (!isCurr) {
-                          _controller
-                            ..number = item.number!
-                            ..onReload();
-                        }
-                      },
-                      title: Text(
-                        item.name!,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      trailing: isCurr
-                          ? const Icon(Icons.check, size: 18)
-                          : null,
-                      contentPadding: const EdgeInsetsGeometry.symmetric(
-                        horizontal: 16,
-                      ),
-                    );
-                  },
-                ),
+          builder: (context) => Dialog(
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: width,
+              height: width,
+              child: ListView.builder(
+                controller: controller,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                itemCount: seriesList.length,
+                itemExtent: 44,
+                itemBuilder: (context, index) {
+                  final item = seriesList[index];
+                  final isCurr = index == currIndex;
+                  return ListTile(
+                    dense: true,
+                    minTileHeight: 44,
+                    tileColor: isCurr ? Theme.of(context).highlightColor : null,
+                    onTap: () {
+                      Get.back();
+                      if (!isCurr) {
+                        _controller
+                          ..number = item.number!
+                          ..onReload();
+                      }
+                    },
+                    title: Text(
+                      item.name!,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    trailing: isCurr ? const Icon(Icons.check, size: 18) : null,
+                    contentPadding: const EdgeInsetsGeometry.symmetric(
+                      horizontal: 16,
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         ).whenComplete(controller.dispose);
       },
       child: Text.rich(
@@ -205,10 +201,17 @@ class _PopularSeriesPageState extends State<PopularSeriesPage> with GridMixin {
         ],
       );
     }
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.only(left: 14, bottom: 7),
-        child: child,
+    final height = MediaQuery.textScalerOf(context).scale(27);
+    return SliverPersistentHeader(
+      floating: true,
+      delegate: CustomSliverPersistentHeaderDelegate(
+        extent: height,
+        child: Container(
+          height: height,
+          padding: const EdgeInsets.only(left: 14, bottom: 7),
+          child: child,
+        ),
+        bgColor: colorScheme.surface,
       ),
     );
   }

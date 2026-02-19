@@ -8,7 +8,7 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
@@ -67,7 +67,6 @@ class Avatar extends $pb.GeneratedMessage {
   static Avatar create() => Avatar._();
   @$core.override
   Avatar createEmptyInstance() => create();
-  static $pb.PbList<Avatar> createRepeated() => $pb.PbList<Avatar>();
   @$core.pragma('dart2js:noInline')
   static Avatar getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Avatar>(create);
@@ -143,7 +142,6 @@ class Bubble extends $pb.GeneratedMessage {
   static Bubble create() => Bubble._();
   @$core.override
   Bubble createEmptyInstance() => create();
-  static $pb.PbList<Bubble> createRepeated() => $pb.PbList<Bubble>();
   @$core.pragma('dart2js:noInline')
   static Bubble getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Bubble>(create);
@@ -221,7 +219,6 @@ class BubbleV2 extends $pb.GeneratedMessage {
   static BubbleV2 create() => BubbleV2._();
   @$core.override
   BubbleV2 createEmptyInstance() => create();
-  static $pb.PbList<BubbleV2> createRepeated() => $pb.PbList<BubbleV2>();
   @$core.pragma('dart2js:noInline')
   static BubbleV2 getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BubbleV2>(create);
@@ -316,7 +313,6 @@ class Button extends $pb.GeneratedMessage {
   static Button create() => Button._();
   @$core.override
   Button createEmptyInstance() => create();
-  static $pb.PbList<Button> createRepeated() => $pb.PbList<Button>();
   @$core.pragma('dart2js:noInline')
   static Button getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Button>(create);
@@ -382,8 +378,6 @@ class BuzzwordConfig extends $pb.GeneratedMessage {
   static BuzzwordConfig create() => BuzzwordConfig._();
   @$core.override
   BuzzwordConfig createEmptyInstance() => create();
-  static $pb.PbList<BuzzwordConfig> createRepeated() =>
-      $pb.PbList<BuzzwordConfig>();
   @$core.pragma('dart2js:noInline')
   static BuzzwordConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<BuzzwordConfig>(create);
@@ -448,8 +442,6 @@ class BuzzwordShowConfig extends $pb.GeneratedMessage {
   static BuzzwordShowConfig create() => BuzzwordShowConfig._();
   @$core.override
   BuzzwordShowConfig createEmptyInstance() => create();
-  static $pb.PbList<BuzzwordShowConfig> createRepeated() =>
-      $pb.PbList<BuzzwordShowConfig>();
   @$core.pragma('dart2js:noInline')
   static BuzzwordShowConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<BuzzwordShowConfig>(create);
@@ -559,7 +551,6 @@ class CheckBox extends $pb.GeneratedMessage {
   static CheckBox create() => CheckBox._();
   @$core.override
   CheckBox createEmptyInstance() => create();
-  static $pb.PbList<CheckBox> createRepeated() => $pb.PbList<CheckBox>();
   @$core.pragma('dart2js:noInline')
   static CheckBox getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CheckBox>(create);
@@ -648,7 +639,6 @@ class CheckBoxV2 extends $pb.GeneratedMessage {
   static CheckBoxV2 create() => CheckBoxV2._();
   @$core.override
   CheckBoxV2 createEmptyInstance() => create();
-  static $pb.PbList<CheckBoxV2> createRepeated() => $pb.PbList<CheckBoxV2>();
   @$core.pragma('dart2js:noInline')
   static CheckBoxV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<CheckBoxV2>(create);
@@ -743,7 +733,6 @@ class ClickButton extends $pb.GeneratedMessage {
   static ClickButton create() => ClickButton._();
   @$core.override
   ClickButton createEmptyInstance() => create();
-  static $pb.PbList<ClickButton> createRepeated() => $pb.PbList<ClickButton>();
   @$core.pragma('dart2js:noInline')
   static ClickButton getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ClickButton>(create);
@@ -856,8 +845,6 @@ class ClickButtonV2 extends $pb.GeneratedMessage {
   static ClickButtonV2 create() => ClickButtonV2._();
   @$core.override
   ClickButtonV2 createEmptyInstance() => create();
-  static $pb.PbList<ClickButtonV2> createRepeated() =>
-      $pb.PbList<ClickButtonV2>();
   @$core.pragma('dart2js:noInline')
   static ClickButtonV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ClickButtonV2>(create);
@@ -952,7 +939,6 @@ class Command extends $pb.GeneratedMessage {
   static Command create() => Command._();
   @$core.override
   Command createEmptyInstance() => create();
-  static $pb.PbList<Command> createRepeated() => $pb.PbList<Command>();
   @$core.pragma('dart2js:noInline')
   static Command getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Command>(create);
@@ -1040,7 +1026,6 @@ class CommandDm extends $pb.GeneratedMessage {
   static CommandDm create() => CommandDm._();
   @$core.override
   CommandDm createEmptyInstance() => create();
-  static $pb.PbList<CommandDm> createRepeated() => $pb.PbList<CommandDm>();
   @$core.pragma('dart2js:noInline')
   static CommandDm getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandDm>(create);
@@ -1214,8 +1199,6 @@ class DanmakuAIFlag extends $pb.GeneratedMessage {
   static DanmakuAIFlag create() => DanmakuAIFlag._();
   @$core.override
   DanmakuAIFlag createEmptyInstance() => create();
-  static $pb.PbList<DanmakuAIFlag> createRepeated() =>
-      $pb.PbList<DanmakuAIFlag>();
   @$core.pragma('dart2js:noInline')
   static DanmakuAIFlag getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmakuAIFlag>(create);
@@ -1240,6 +1223,7 @@ class DanmakuElem extends $pb.GeneratedMessage {
     $core.int? pool,
     $core.String? idStr,
     $core.int? attr,
+    $fixnum.Int64? like,
     $core.String? animation,
     $core.String? extra,
     DmColorfulType? colorful,
@@ -1248,8 +1232,6 @@ class DanmakuElem extends $pb.GeneratedMessage {
     DmFromType? dmFrom,
     $core.int? count,
     $core.bool? isSelf,
-    $core.int? filterVer,
-    $core.bool? shouldRemove,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -1265,6 +1247,7 @@ class DanmakuElem extends $pb.GeneratedMessage {
     if (pool != null) result.pool = pool;
     if (idStr != null) result.idStr = idStr;
     if (attr != null) result.attr = attr;
+    if (like != null) result.like = like;
     if (animation != null) result.animation = animation;
     if (extra != null) result.extra = extra;
     if (colorful != null) result.colorful = colorful;
@@ -1273,8 +1256,6 @@ class DanmakuElem extends $pb.GeneratedMessage {
     if (dmFrom != null) result.dmFrom = dmFrom;
     if (count != null) result.count = count;
     if (isSelf != null) result.isSelf = isSelf;
-    if (filterVer != null) result.filterVer = filterVer;
-    if (shouldRemove != null) result.shouldRemove = shouldRemove;
     return result;
   }
 
@@ -1305,6 +1286,7 @@ class DanmakuElem extends $pb.GeneratedMessage {
     ..aI(11, _omitFieldNames ? '' : 'pool')
     ..aOS(12, _omitFieldNames ? '' : 'idStr')
     ..aI(13, _omitFieldNames ? '' : 'attr')
+    ..aInt64(15, _omitFieldNames ? '' : 'like')
     ..aOS(22, _omitFieldNames ? '' : 'animation')
     ..aOS(23, _omitFieldNames ? '' : 'extra')
     ..aE<DmColorfulType>(24, _omitFieldNames ? '' : 'colorful',
@@ -1314,9 +1296,7 @@ class DanmakuElem extends $pb.GeneratedMessage {
     ..aE<DmFromType>(27, _omitFieldNames ? '' : 'dmFrom',
         enumValues: DmFromType.values)
     ..aI(28, _omitFieldNames ? '' : 'count')
-    ..aOB(29, _omitFieldNames ? '' : 'isSelf', protoName: 'isSelf')
-    ..aI(30, _omitFieldNames ? '' : 'filterVer', protoName: 'filterVer')
-    ..aOB(31, _omitFieldNames ? '' : 'shouldRemove', protoName: 'shouldRemove')
+    ..aOB(29, _omitFieldNames ? '' : 'isSelf')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1333,7 +1313,6 @@ class DanmakuElem extends $pb.GeneratedMessage {
   static DanmakuElem create() => DanmakuElem._();
   @$core.override
   DanmakuElem createEmptyInstance() => create();
-  static $pb.PbList<DanmakuElem> createRepeated() => $pb.PbList<DanmakuElem>();
   @$core.pragma('dart2js:noInline')
   static DanmakuElem getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmakuElem>(create);
@@ -1456,95 +1435,86 @@ class DanmakuElem extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   void clearAttr() => $_clearField(13);
 
+  @$pb.TagNumber(15)
+  $fixnum.Int64 get like => $_getI64(13);
+  @$pb.TagNumber(15)
+  set like($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(15)
+  $core.bool hasLike() => $_has(13);
+  @$pb.TagNumber(15)
+  void clearLike() => $_clearField(15);
+
   @$pb.TagNumber(22)
-  $core.String get animation => $_getSZ(13);
+  $core.String get animation => $_getSZ(14);
   @$pb.TagNumber(22)
-  set animation($core.String value) => $_setString(13, value);
+  set animation($core.String value) => $_setString(14, value);
   @$pb.TagNumber(22)
-  $core.bool hasAnimation() => $_has(13);
+  $core.bool hasAnimation() => $_has(14);
   @$pb.TagNumber(22)
   void clearAnimation() => $_clearField(22);
 
   @$pb.TagNumber(23)
-  $core.String get extra => $_getSZ(14);
+  $core.String get extra => $_getSZ(15);
   @$pb.TagNumber(23)
-  set extra($core.String value) => $_setString(14, value);
+  set extra($core.String value) => $_setString(15, value);
   @$pb.TagNumber(23)
-  $core.bool hasExtra() => $_has(14);
+  $core.bool hasExtra() => $_has(15);
   @$pb.TagNumber(23)
   void clearExtra() => $_clearField(23);
 
   @$pb.TagNumber(24)
-  DmColorfulType get colorful => $_getN(15);
+  DmColorfulType get colorful => $_getN(16);
   @$pb.TagNumber(24)
   set colorful(DmColorfulType value) => $_setField(24, value);
   @$pb.TagNumber(24)
-  $core.bool hasColorful() => $_has(15);
+  $core.bool hasColorful() => $_has(16);
   @$pb.TagNumber(24)
   void clearColorful() => $_clearField(24);
 
   @$pb.TagNumber(25)
-  $core.int get type => $_getIZ(16);
+  $core.int get type => $_getIZ(17);
   @$pb.TagNumber(25)
-  set type($core.int value) => $_setSignedInt32(16, value);
+  set type($core.int value) => $_setSignedInt32(17, value);
   @$pb.TagNumber(25)
-  $core.bool hasType() => $_has(16);
+  $core.bool hasType() => $_has(17);
   @$pb.TagNumber(25)
   void clearType() => $_clearField(25);
 
   @$pb.TagNumber(26)
-  $fixnum.Int64 get oid => $_getI64(17);
+  $fixnum.Int64 get oid => $_getI64(18);
   @$pb.TagNumber(26)
-  set oid($fixnum.Int64 value) => $_setInt64(17, value);
+  set oid($fixnum.Int64 value) => $_setInt64(18, value);
   @$pb.TagNumber(26)
-  $core.bool hasOid() => $_has(17);
+  $core.bool hasOid() => $_has(18);
   @$pb.TagNumber(26)
   void clearOid() => $_clearField(26);
 
   @$pb.TagNumber(27)
-  DmFromType get dmFrom => $_getN(18);
+  DmFromType get dmFrom => $_getN(19);
   @$pb.TagNumber(27)
   set dmFrom(DmFromType value) => $_setField(27, value);
   @$pb.TagNumber(27)
-  $core.bool hasDmFrom() => $_has(18);
+  $core.bool hasDmFrom() => $_has(19);
   @$pb.TagNumber(27)
   void clearDmFrom() => $_clearField(27);
 
   @$pb.TagNumber(28)
-  $core.int get count => $_getIZ(19);
+  $core.int get count => $_getIZ(20);
   @$pb.TagNumber(28)
-  set count($core.int value) => $_setSignedInt32(19, value);
+  set count($core.int value) => $_setSignedInt32(20, value);
   @$pb.TagNumber(28)
-  $core.bool hasCount() => $_has(19);
+  $core.bool hasCount() => $_has(20);
   @$pb.TagNumber(28)
   void clearCount() => $_clearField(28);
 
   @$pb.TagNumber(29)
-  $core.bool get isSelf => $_getBF(20);
+  $core.bool get isSelf => $_getBF(21);
   @$pb.TagNumber(29)
-  set isSelf($core.bool value) => $_setBool(20, value);
+  set isSelf($core.bool value) => $_setBool(21, value);
   @$pb.TagNumber(29)
-  $core.bool hasIsSelf() => $_has(20);
+  $core.bool hasIsSelf() => $_has(21);
   @$pb.TagNumber(29)
   void clearIsSelf() => $_clearField(29);
-
-  @$pb.TagNumber(30)
-  $core.int get filterVer => $_getIZ(21);
-  @$pb.TagNumber(30)
-  set filterVer($core.int value) => $_setSignedInt32(21, value);
-  @$pb.TagNumber(30)
-  $core.bool hasFilterVer() => $_has(21);
-  @$pb.TagNumber(30)
-  void clearFilterVer() => $_clearField(30);
-
-  @$pb.TagNumber(31)
-  $core.bool get shouldRemove => $_getBF(22);
-  @$pb.TagNumber(31)
-  set shouldRemove($core.bool value) => $_setBool(22, value);
-  @$pb.TagNumber(31)
-  $core.bool hasShouldRemove() => $_has(22);
-  @$pb.TagNumber(31)
-  void clearShouldRemove() => $_clearField(31);
 }
 
 class DanmakuFlag extends $pb.GeneratedMessage {
@@ -1590,7 +1560,6 @@ class DanmakuFlag extends $pb.GeneratedMessage {
   static DanmakuFlag create() => DanmakuFlag._();
   @$core.override
   DanmakuFlag createEmptyInstance() => create();
-  static $pb.PbList<DanmakuFlag> createRepeated() => $pb.PbList<DanmakuFlag>();
   @$core.pragma('dart2js:noInline')
   static DanmakuFlag getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmakuFlag>(create);
@@ -1661,8 +1630,6 @@ class DanmakuFlagConfig extends $pb.GeneratedMessage {
   static DanmakuFlagConfig create() => DanmakuFlagConfig._();
   @$core.override
   DanmakuFlagConfig createEmptyInstance() => create();
-  static $pb.PbList<DanmakuFlagConfig> createRepeated() =>
-      $pb.PbList<DanmakuFlagConfig>();
   @$core.pragma('dart2js:noInline')
   static DanmakuFlagConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmakuFlagConfig>(create);
@@ -1819,8 +1786,6 @@ class DanmuDefaultPlayerConfig extends $pb.GeneratedMessage {
   static DanmuDefaultPlayerConfig create() => DanmuDefaultPlayerConfig._();
   @$core.override
   DanmuDefaultPlayerConfig createEmptyInstance() => create();
-  static $pb.PbList<DanmuDefaultPlayerConfig> createRepeated() =>
-      $pb.PbList<DanmuDefaultPlayerConfig>();
   @$core.pragma('dart2js:noInline')
   static DanmuDefaultPlayerConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmuDefaultPlayerConfig>(create);
@@ -2149,8 +2114,6 @@ class DanmuPlayerConfig extends $pb.GeneratedMessage {
   static DanmuPlayerConfig create() => DanmuPlayerConfig._();
   @$core.override
   DanmuPlayerConfig createEmptyInstance() => create();
-  static $pb.PbList<DanmuPlayerConfig> createRepeated() =>
-      $pb.PbList<DanmuPlayerConfig>();
   @$core.pragma('dart2js:noInline')
   static DanmuPlayerConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmuPlayerConfig>(create);
@@ -2449,8 +2412,6 @@ class DanmuPlayerConfigPanel extends $pb.GeneratedMessage {
   static DanmuPlayerConfigPanel create() => DanmuPlayerConfigPanel._();
   @$core.override
   DanmuPlayerConfigPanel createEmptyInstance() => create();
-  static $pb.PbList<DanmuPlayerConfigPanel> createRepeated() =>
-      $pb.PbList<DanmuPlayerConfigPanel>();
   @$core.pragma('dart2js:noInline')
   static DanmuPlayerConfigPanel getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmuPlayerConfigPanel>(create);
@@ -2512,8 +2473,6 @@ class DanmuPlayerDynamicConfig extends $pb.GeneratedMessage {
   static DanmuPlayerDynamicConfig create() => DanmuPlayerDynamicConfig._();
   @$core.override
   DanmuPlayerDynamicConfig createEmptyInstance() => create();
-  static $pb.PbList<DanmuPlayerDynamicConfig> createRepeated() =>
-      $pb.PbList<DanmuPlayerDynamicConfig>();
   @$core.pragma('dart2js:noInline')
   static DanmuPlayerDynamicConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmuPlayerDynamicConfig>(create);
@@ -2599,8 +2558,6 @@ class DanmuPlayerViewConfig extends $pb.GeneratedMessage {
   static DanmuPlayerViewConfig create() => DanmuPlayerViewConfig._();
   @$core.override
   DanmuPlayerViewConfig createEmptyInstance() => create();
-  static $pb.PbList<DanmuPlayerViewConfig> createRepeated() =>
-      $pb.PbList<DanmuPlayerViewConfig>();
   @$core.pragma('dart2js:noInline')
   static DanmuPlayerViewConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmuPlayerViewConfig>(create);
@@ -2765,8 +2722,6 @@ class DanmuWebPlayerConfig extends $pb.GeneratedMessage {
   static DanmuWebPlayerConfig create() => DanmuWebPlayerConfig._();
   @$core.override
   DanmuWebPlayerConfig createEmptyInstance() => create();
-  static $pb.PbList<DanmuWebPlayerConfig> createRepeated() =>
-      $pb.PbList<DanmuWebPlayerConfig>();
   @$core.pragma('dart2js:noInline')
   static DanmuWebPlayerConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DanmuWebPlayerConfig>(create);
@@ -3044,7 +2999,6 @@ class DmColorful extends $pb.GeneratedMessage {
   static DmColorful create() => DmColorful._();
   @$core.override
   DmColorful createEmptyInstance() => create();
-  static $pb.PbList<DmColorful> createRepeated() => $pb.PbList<DmColorful>();
   @$core.pragma('dart2js:noInline')
   static DmColorful getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmColorful>(create);
@@ -3119,8 +3073,6 @@ class DmExpoReportReq extends $pb.GeneratedMessage {
   static DmExpoReportReq create() => DmExpoReportReq._();
   @$core.override
   DmExpoReportReq createEmptyInstance() => create();
-  static $pb.PbList<DmExpoReportReq> createRepeated() =>
-      $pb.PbList<DmExpoReportReq>();
   @$core.pragma('dart2js:noInline')
   static DmExpoReportReq getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmExpoReportReq>(create);
@@ -3196,8 +3148,6 @@ class DmExpoReportRes extends $pb.GeneratedMessage {
   static DmExpoReportRes create() => DmExpoReportRes._();
   @$core.override
   DmExpoReportRes createEmptyInstance() => create();
-  static $pb.PbList<DmExpoReportRes> createRepeated() =>
-      $pb.PbList<DmExpoReportRes>();
   @$core.pragma('dart2js:noInline')
   static DmExpoReportRes getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmExpoReportRes>(create);
@@ -3247,7 +3197,6 @@ class DmHerdView extends $pb.GeneratedMessage {
   static DmHerdView create() => DmHerdView._();
   @$core.override
   DmHerdView createEmptyInstance() => create();
-  static $pb.PbList<DmHerdView> createRepeated() => $pb.PbList<DmHerdView>();
   @$core.pragma('dart2js:noInline')
   static DmHerdView getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmHerdView>(create);
@@ -3323,7 +3272,6 @@ class DmMaskWall extends $pb.GeneratedMessage {
   static DmMaskWall create() => DmMaskWall._();
   @$core.override
   DmMaskWall createEmptyInstance() => create();
-  static $pb.PbList<DmMaskWall> createRepeated() => $pb.PbList<DmMaskWall>();
   @$core.pragma('dart2js:noInline')
   static DmMaskWall getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmMaskWall>(create);
@@ -3422,8 +3370,6 @@ class DmMaskWallContent extends $pb.GeneratedMessage {
   static DmMaskWallContent create() => DmMaskWallContent._();
   @$core.override
   DmMaskWallContent createEmptyInstance() => create();
-  static $pb.PbList<DmMaskWallContent> createRepeated() =>
-      $pb.PbList<DmMaskWallContent>();
   @$core.pragma('dart2js:noInline')
   static DmMaskWallContent getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmMaskWallContent>(create);
@@ -3603,8 +3549,6 @@ class DmPlayerConfigReq extends $pb.GeneratedMessage {
   static DmPlayerConfigReq create() => DmPlayerConfigReq._();
   @$core.override
   DmPlayerConfigReq createEmptyInstance() => create();
-  static $pb.PbList<DmPlayerConfigReq> createRepeated() =>
-      $pb.PbList<DmPlayerConfigReq>();
   @$core.pragma('dart2js:noInline')
   static DmPlayerConfigReq getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmPlayerConfigReq>(create);
@@ -3950,8 +3894,6 @@ class DmSegCacheReq extends $pb.GeneratedMessage {
   static DmSegCacheReq create() => DmSegCacheReq._();
   @$core.override
   DmSegCacheReq createEmptyInstance() => create();
-  static $pb.PbList<DmSegCacheReq> createRepeated() =>
-      $pb.PbList<DmSegCacheReq>();
   @$core.pragma('dart2js:noInline')
   static DmSegCacheReq getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegCacheReq>(create);
@@ -4028,7 +3970,6 @@ class DmSegConfig extends $pb.GeneratedMessage {
   static DmSegConfig create() => DmSegConfig._();
   @$core.override
   DmSegConfig createEmptyInstance() => create();
-  static $pb.PbList<DmSegConfig> createRepeated() => $pb.PbList<DmSegConfig>();
   @$core.pragma('dart2js:noInline')
   static DmSegConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegConfig>(create);
@@ -4112,8 +4053,6 @@ class DmSegMobileReply extends $pb.GeneratedMessage {
   static DmSegMobileReply create() => DmSegMobileReply._();
   @$core.override
   DmSegMobileReply createEmptyInstance() => create();
-  static $pb.PbList<DmSegMobileReply> createRepeated() =>
-      $pb.PbList<DmSegMobileReply>();
   @$core.pragma('dart2js:noInline')
   static DmSegMobileReply getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegMobileReply>(create);
@@ -4228,8 +4167,6 @@ class DmSegMobileReq extends $pb.GeneratedMessage {
   static DmSegMobileReq create() => DmSegMobileReq._();
   @$core.override
   DmSegMobileReq createEmptyInstance() => create();
-  static $pb.PbList<DmSegMobileReq> createRepeated() =>
-      $pb.PbList<DmSegMobileReq>();
   @$core.pragma('dart2js:noInline')
   static DmSegMobileReq getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegMobileReq>(create);
@@ -4379,8 +4316,6 @@ class DmSegOttReply extends $pb.GeneratedMessage {
   static DmSegOttReply create() => DmSegOttReply._();
   @$core.override
   DmSegOttReply createEmptyInstance() => create();
-  static $pb.PbList<DmSegOttReply> createRepeated() =>
-      $pb.PbList<DmSegOttReply>();
   @$core.pragma('dart2js:noInline')
   static DmSegOttReply getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegOttReply>(create);
@@ -4448,7 +4383,6 @@ class DmSegOttReq extends $pb.GeneratedMessage {
   static DmSegOttReq create() => DmSegOttReq._();
   @$core.override
   DmSegOttReq createEmptyInstance() => create();
-  static $pb.PbList<DmSegOttReq> createRepeated() => $pb.PbList<DmSegOttReq>();
   @$core.pragma('dart2js:noInline')
   static DmSegOttReq getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegOttReq>(create);
@@ -4535,8 +4469,6 @@ class DmSegSDKReply extends $pb.GeneratedMessage {
   static DmSegSDKReply create() => DmSegSDKReply._();
   @$core.override
   DmSegSDKReply createEmptyInstance() => create();
-  static $pb.PbList<DmSegSDKReply> createRepeated() =>
-      $pb.PbList<DmSegSDKReply>();
   @$core.pragma('dart2js:noInline')
   static DmSegSDKReply getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegSDKReply>(create);
@@ -4604,7 +4536,6 @@ class DmSegSDKReq extends $pb.GeneratedMessage {
   static DmSegSDKReq create() => DmSegSDKReq._();
   @$core.override
   DmSegSDKReq createEmptyInstance() => create();
-  static $pb.PbList<DmSegSDKReq> createRepeated() => $pb.PbList<DmSegSDKReq>();
   @$core.pragma('dart2js:noInline')
   static DmSegSDKReq getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmSegSDKReq>(create);
@@ -4696,7 +4627,6 @@ class DmSubView extends $pb.GeneratedMessage {
   static DmSubView create() => DmSubView._();
   @$core.override
   DmSubView createEmptyInstance() => create();
-  static $pb.PbList<DmSubView> createRepeated() => $pb.PbList<DmSubView>();
   @$core.pragma('dart2js:noInline')
   static DmSubView getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DmSubView>(create);
@@ -4859,7 +4789,6 @@ class DmViewReply extends $pb.GeneratedMessage {
   static DmViewReply create() => DmViewReply._();
   @$core.override
   DmViewReply createEmptyInstance() => create();
-  static $pb.PbList<DmViewReply> createRepeated() => $pb.PbList<DmViewReply>();
   @$core.pragma('dart2js:noInline')
   static DmViewReply getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmViewReply>(create);
@@ -5115,7 +5044,6 @@ class DmViewReq extends $pb.GeneratedMessage {
   static DmViewReq create() => DmViewReq._();
   @$core.override
   DmViewReq createEmptyInstance() => create();
-  static $pb.PbList<DmViewReq> createRepeated() => $pb.PbList<DmViewReq>();
   @$core.pragma('dart2js:noInline')
   static DmViewReq getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DmViewReq>(create);
@@ -5273,8 +5201,6 @@ class DmWebViewReply extends $pb.GeneratedMessage {
   static DmWebViewReply create() => DmWebViewReply._();
   @$core.override
   DmWebViewReply createEmptyInstance() => create();
-  static $pb.PbList<DmWebViewReply> createRepeated() =>
-      $pb.PbList<DmWebViewReply>();
   @$core.pragma('dart2js:noInline')
   static DmWebViewReply getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DmWebViewReply>(create);
@@ -5443,7 +5369,6 @@ class ExpoReport extends $pb.GeneratedMessage {
   static ExpoReport create() => ExpoReport._();
   @$core.override
   ExpoReport createEmptyInstance() => create();
-  static $pb.PbList<ExpoReport> createRepeated() => $pb.PbList<ExpoReport>();
   @$core.pragma('dart2js:noInline')
   static ExpoReport getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ExpoReport>(create);
@@ -5525,7 +5450,6 @@ class Expression extends $pb.GeneratedMessage {
   static Expression create() => Expression._();
   @$core.override
   Expression createEmptyInstance() => create();
-  static $pb.PbList<Expression> createRepeated() => $pb.PbList<Expression>();
   @$core.pragma('dart2js:noInline')
   static Expression getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<Expression>(create);
@@ -5588,7 +5512,6 @@ class Expressions extends $pb.GeneratedMessage {
   static Expressions create() => Expressions._();
   @$core.override
   Expressions createEmptyInstance() => create();
-  static $pb.PbList<Expressions> createRepeated() => $pb.PbList<Expressions>();
   @$core.pragma('dart2js:noInline')
   static Expressions getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<Expressions>(create);
@@ -5639,8 +5562,6 @@ class InlinePlayerDanmakuSwitch extends $pb.GeneratedMessage {
   static InlinePlayerDanmakuSwitch create() => InlinePlayerDanmakuSwitch._();
   @$core.override
   InlinePlayerDanmakuSwitch createEmptyInstance() => create();
-  static $pb.PbList<InlinePlayerDanmakuSwitch> createRepeated() =>
-      $pb.PbList<InlinePlayerDanmakuSwitch>();
   @$core.pragma('dart2js:noInline')
   static InlinePlayerDanmakuSwitch getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<InlinePlayerDanmakuSwitch>(create);
@@ -5698,7 +5619,6 @@ class Label extends $pb.GeneratedMessage {
   static Label create() => Label._();
   @$core.override
   Label createEmptyInstance() => create();
-  static $pb.PbList<Label> createRepeated() => $pb.PbList<Label>();
   @$core.pragma('dart2js:noInline')
   static Label getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Label>(create);
@@ -5766,7 +5686,6 @@ class LabelV2 extends $pb.GeneratedMessage {
   static LabelV2 create() => LabelV2._();
   @$core.override
   LabelV2 createEmptyInstance() => create();
-  static $pb.PbList<LabelV2> createRepeated() => $pb.PbList<LabelV2>();
   @$core.pragma('dart2js:noInline')
   static LabelV2 getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LabelV2>(create);
@@ -5845,7 +5764,6 @@ class Period extends $pb.GeneratedMessage {
   static Period create() => Period._();
   @$core.override
   Period createEmptyInstance() => create();
-  static $pb.PbList<Period> createRepeated() => $pb.PbList<Period>();
   @$core.pragma('dart2js:noInline')
   static Period getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Period>(create);
@@ -5913,8 +5831,6 @@ class PlayerDanmakuAiRecommendedLevel extends $pb.GeneratedMessage {
       PlayerDanmakuAiRecommendedLevel._();
   @$core.override
   PlayerDanmakuAiRecommendedLevel createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuAiRecommendedLevel> createRepeated() =>
-      $pb.PbList<PlayerDanmakuAiRecommendedLevel>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuAiRecommendedLevel getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuAiRecommendedLevel>(
@@ -5975,8 +5891,6 @@ class PlayerDanmakuAiRecommendedLevelV2 extends $pb.GeneratedMessage {
       PlayerDanmakuAiRecommendedLevelV2._();
   @$core.override
   PlayerDanmakuAiRecommendedLevelV2 createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuAiRecommendedLevelV2> createRepeated() =>
-      $pb.PbList<PlayerDanmakuAiRecommendedLevelV2>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuAiRecommendedLevelV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuAiRecommendedLevelV2>(
@@ -6037,8 +5951,6 @@ class PlayerDanmakuAiRecommendedSwitch extends $pb.GeneratedMessage {
       PlayerDanmakuAiRecommendedSwitch._();
   @$core.override
   PlayerDanmakuAiRecommendedSwitch createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuAiRecommendedSwitch> createRepeated() =>
-      $pb.PbList<PlayerDanmakuAiRecommendedSwitch>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuAiRecommendedSwitch getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuAiRecommendedSwitch>(
@@ -6096,8 +6008,6 @@ class PlayerDanmakuBlockbottom extends $pb.GeneratedMessage {
   static PlayerDanmakuBlockbottom create() => PlayerDanmakuBlockbottom._();
   @$core.override
   PlayerDanmakuBlockbottom createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlockbottom> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlockbottom>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlockbottom getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlockbottom>(create);
@@ -6155,8 +6065,6 @@ class PlayerDanmakuBlockcolorful extends $pb.GeneratedMessage {
   static PlayerDanmakuBlockcolorful create() => PlayerDanmakuBlockcolorful._();
   @$core.override
   PlayerDanmakuBlockcolorful createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlockcolorful> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlockcolorful>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlockcolorful getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlockcolorful>(create);
@@ -6213,8 +6121,6 @@ class PlayerDanmakuBlockrepeat extends $pb.GeneratedMessage {
   static PlayerDanmakuBlockrepeat create() => PlayerDanmakuBlockrepeat._();
   @$core.override
   PlayerDanmakuBlockrepeat createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlockrepeat> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlockrepeat>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlockrepeat getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlockrepeat>(create);
@@ -6271,8 +6177,6 @@ class PlayerDanmakuBlockscroll extends $pb.GeneratedMessage {
   static PlayerDanmakuBlockscroll create() => PlayerDanmakuBlockscroll._();
   @$core.override
   PlayerDanmakuBlockscroll createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlockscroll> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlockscroll>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlockscroll getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlockscroll>(create);
@@ -6329,8 +6233,6 @@ class PlayerDanmakuBlockspecial extends $pb.GeneratedMessage {
   static PlayerDanmakuBlockspecial create() => PlayerDanmakuBlockspecial._();
   @$core.override
   PlayerDanmakuBlockspecial createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlockspecial> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlockspecial>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlockspecial getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlockspecial>(create);
@@ -6387,8 +6289,6 @@ class PlayerDanmakuBlocktop extends $pb.GeneratedMessage {
   static PlayerDanmakuBlocktop create() => PlayerDanmakuBlocktop._();
   @$core.override
   PlayerDanmakuBlocktop createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlocktop> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlocktop>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlocktop getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlocktop>(create);
@@ -6447,8 +6347,6 @@ class PlayerDanmakuBlocktopBottom extends $pb.GeneratedMessage {
       PlayerDanmakuBlocktopBottom._();
   @$core.override
   PlayerDanmakuBlocktopBottom createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuBlocktopBottom> createRepeated() =>
-      $pb.PbList<PlayerDanmakuBlocktopBottom>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuBlocktopBottom getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuBlocktopBottom>(create);
@@ -6504,8 +6402,6 @@ class PlayerDanmakuDensity extends $pb.GeneratedMessage {
   static PlayerDanmakuDensity create() => PlayerDanmakuDensity._();
   @$core.override
   PlayerDanmakuDensity createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuDensity> createRepeated() =>
-      $pb.PbList<PlayerDanmakuDensity>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuDensity getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuDensity>(create);
@@ -6561,8 +6457,6 @@ class PlayerDanmakuDomain extends $pb.GeneratedMessage {
   static PlayerDanmakuDomain create() => PlayerDanmakuDomain._();
   @$core.override
   PlayerDanmakuDomain createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuDomain> createRepeated() =>
-      $pb.PbList<PlayerDanmakuDomain>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuDomain getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuDomain>(create);
@@ -6619,8 +6513,6 @@ class PlayerDanmakuDomainV2 extends $pb.GeneratedMessage {
   static PlayerDanmakuDomainV2 create() => PlayerDanmakuDomainV2._();
   @$core.override
   PlayerDanmakuDomainV2 createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuDomainV2> createRepeated() =>
-      $pb.PbList<PlayerDanmakuDomainV2>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuDomainV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuDomainV2>(create);
@@ -6677,8 +6569,6 @@ class PlayerDanmakuEnableHerdDm extends $pb.GeneratedMessage {
   static PlayerDanmakuEnableHerdDm create() => PlayerDanmakuEnableHerdDm._();
   @$core.override
   PlayerDanmakuEnableHerdDm createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuEnableHerdDm> createRepeated() =>
-      $pb.PbList<PlayerDanmakuEnableHerdDm>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuEnableHerdDm getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuEnableHerdDm>(create);
@@ -6737,8 +6627,6 @@ class PlayerDanmakuEnableblocklist extends $pb.GeneratedMessage {
       PlayerDanmakuEnableblocklist._();
   @$core.override
   PlayerDanmakuEnableblocklist createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuEnableblocklist> createRepeated() =>
-      $pb.PbList<PlayerDanmakuEnableblocklist>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuEnableblocklist getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuEnableblocklist>(create);
@@ -6794,8 +6682,6 @@ class PlayerDanmakuOpacity extends $pb.GeneratedMessage {
   static PlayerDanmakuOpacity create() => PlayerDanmakuOpacity._();
   @$core.override
   PlayerDanmakuOpacity createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuOpacity> createRepeated() =>
-      $pb.PbList<PlayerDanmakuOpacity>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuOpacity getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuOpacity>(create);
@@ -6852,8 +6738,6 @@ class PlayerDanmakuPeopleProof extends $pb.GeneratedMessage {
   static PlayerDanmakuPeopleProof create() => PlayerDanmakuPeopleProof._();
   @$core.override
   PlayerDanmakuPeopleProof createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuPeopleProof> createRepeated() =>
-      $pb.PbList<PlayerDanmakuPeopleProof>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuPeopleProof getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuPeopleProof>(create);
@@ -6911,8 +6795,6 @@ class PlayerDanmakuScalingfactor extends $pb.GeneratedMessage {
   static PlayerDanmakuScalingfactor create() => PlayerDanmakuScalingfactor._();
   @$core.override
   PlayerDanmakuScalingfactor createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuScalingfactor> createRepeated() =>
-      $pb.PbList<PlayerDanmakuScalingfactor>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuScalingfactor getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuScalingfactor>(create);
@@ -6971,8 +6853,6 @@ class PlayerDanmakuSeniorModeSwitch extends $pb.GeneratedMessage {
       PlayerDanmakuSeniorModeSwitch._();
   @$core.override
   PlayerDanmakuSeniorModeSwitch createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuSeniorModeSwitch> createRepeated() =>
-      $pb.PbList<PlayerDanmakuSeniorModeSwitch>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuSeniorModeSwitch getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuSeniorModeSwitch>(create);
@@ -7028,8 +6908,6 @@ class PlayerDanmakuSpeed extends $pb.GeneratedMessage {
   static PlayerDanmakuSpeed create() => PlayerDanmakuSpeed._();
   @$core.override
   PlayerDanmakuSpeed createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuSpeed> createRepeated() =>
-      $pb.PbList<PlayerDanmakuSpeed>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuSpeed getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuSpeed>(create);
@@ -7087,8 +6965,6 @@ class PlayerDanmakuSubtitleProof extends $pb.GeneratedMessage {
   static PlayerDanmakuSubtitleProof create() => PlayerDanmakuSubtitleProof._();
   @$core.override
   PlayerDanmakuSubtitleProof createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuSubtitleProof> createRepeated() =>
-      $pb.PbList<PlayerDanmakuSubtitleProof>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuSubtitleProof getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuSubtitleProof>(create);
@@ -7147,8 +7023,6 @@ class PlayerDanmakuSwitch extends $pb.GeneratedMessage {
   static PlayerDanmakuSwitch create() => PlayerDanmakuSwitch._();
   @$core.override
   PlayerDanmakuSwitch createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuSwitch> createRepeated() =>
-      $pb.PbList<PlayerDanmakuSwitch>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuSwitch getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuSwitch>(create);
@@ -7214,8 +7088,6 @@ class PlayerDanmakuSwitchSave extends $pb.GeneratedMessage {
   static PlayerDanmakuSwitchSave create() => PlayerDanmakuSwitchSave._();
   @$core.override
   PlayerDanmakuSwitchSave createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuSwitchSave> createRepeated() =>
-      $pb.PbList<PlayerDanmakuSwitchSave>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuSwitchSave getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuSwitchSave>(create);
@@ -7274,8 +7146,6 @@ class PlayerDanmakuUseDefaultConfig extends $pb.GeneratedMessage {
       PlayerDanmakuUseDefaultConfig._();
   @$core.override
   PlayerDanmakuUseDefaultConfig createEmptyInstance() => create();
-  static $pb.PbList<PlayerDanmakuUseDefaultConfig> createRepeated() =>
-      $pb.PbList<PlayerDanmakuUseDefaultConfig>();
   @$core.pragma('dart2js:noInline')
   static PlayerDanmakuUseDefaultConfig getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PlayerDanmakuUseDefaultConfig>(create);
@@ -7358,7 +7228,6 @@ class PostPanel extends $pb.GeneratedMessage {
   static PostPanel create() => PostPanel._();
   @$core.override
   PostPanel createEmptyInstance() => create();
-  static $pb.PbList<PostPanel> createRepeated() => $pb.PbList<PostPanel>();
   @$core.pragma('dart2js:noInline')
   static PostPanel getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PostPanel>(create);
@@ -7529,7 +7398,6 @@ class PostPanelV2 extends $pb.GeneratedMessage {
   static PostPanelV2 create() => PostPanelV2._();
   @$core.override
   PostPanelV2 createEmptyInstance() => create();
-  static $pb.PbList<PostPanelV2> createRepeated() => $pb.PbList<PostPanelV2>();
   @$core.pragma('dart2js:noInline')
   static PostPanelV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<PostPanelV2>(create);
@@ -7677,7 +7545,6 @@ class QoeInfo extends $pb.GeneratedMessage {
   static QoeInfo create() => QoeInfo._();
   @$core.override
   QoeInfo createEmptyInstance() => create();
-  static $pb.PbList<QoeInfo> createRepeated() => $pb.PbList<QoeInfo>();
   @$core.pragma('dart2js:noInline')
   static QoeInfo getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<QoeInfo>(create);
@@ -7736,8 +7603,6 @@ class ReportDuration extends $pb.GeneratedMessage {
   static ReportDuration create() => ReportDuration._();
   @$core.override
   ReportDuration createEmptyInstance() => create();
-  static $pb.PbList<ReportDuration> createRepeated() =>
-      $pb.PbList<ReportDuration>();
   @$core.pragma('dart2js:noInline')
   static ReportDuration getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ReportDuration>(create);
@@ -7804,7 +7669,6 @@ class Response extends $pb.GeneratedMessage {
   static Response create() => Response._();
   @$core.override
   Response createEmptyInstance() => create();
-  static $pb.PbList<Response> createRepeated() => $pb.PbList<Response>();
   @$core.pragma('dart2js:noInline')
   static Response getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Response>(create);
@@ -7904,8 +7768,6 @@ class SubtitleItem extends $pb.GeneratedMessage {
   static SubtitleItem create() => SubtitleItem._();
   @$core.override
   SubtitleItem createEmptyInstance() => create();
-  static $pb.PbList<SubtitleItem> createRepeated() =>
-      $pb.PbList<SubtitleItem>();
   @$core.pragma('dart2js:noInline')
   static SubtitleItem getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<SubtitleItem>(create);
@@ -8077,7 +7939,6 @@ class TextInput extends $pb.GeneratedMessage {
   static TextInput create() => TextInput._();
   @$core.override
   TextInput createEmptyInstance() => create();
-  static $pb.PbList<TextInput> createRepeated() => $pb.PbList<TextInput>();
   @$core.pragma('dart2js:noInline')
   static TextInput getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TextInput>(create);
@@ -8198,7 +8059,6 @@ class TextInputV2 extends $pb.GeneratedMessage {
   static TextInputV2 create() => TextInputV2._();
   @$core.override
   TextInputV2 createEmptyInstance() => create();
-  static $pb.PbList<TextInputV2> createRepeated() => $pb.PbList<TextInputV2>();
   @$core.pragma('dart2js:noInline')
   static TextInputV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<TextInputV2>(create);
@@ -8289,7 +8149,6 @@ class Toast extends $pb.GeneratedMessage {
   static Toast create() => Toast._();
   @$core.override
   Toast createEmptyInstance() => create();
-  static $pb.PbList<Toast> createRepeated() => $pb.PbList<Toast>();
   @$core.pragma('dart2js:noInline')
   static Toast getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Toast>(create);
@@ -8378,8 +8237,6 @@ class ToastButtonV2 extends $pb.GeneratedMessage {
   static ToastButtonV2 create() => ToastButtonV2._();
   @$core.override
   ToastButtonV2 createEmptyInstance() => create();
-  static $pb.PbList<ToastButtonV2> createRepeated() =>
-      $pb.PbList<ToastButtonV2>();
   @$core.pragma('dart2js:noInline')
   static ToastButtonV2 getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ToastButtonV2>(create);
@@ -8450,7 +8307,6 @@ class ToastV2 extends $pb.GeneratedMessage {
   static ToastV2 create() => ToastV2._();
   @$core.override
   ToastV2 createEmptyInstance() => create();
-  static $pb.PbList<ToastV2> createRepeated() => $pb.PbList<ToastV2>();
   @$core.pragma('dart2js:noInline')
   static ToastV2 getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ToastV2>(create);
@@ -8540,7 +8396,6 @@ class UserInfo extends $pb.GeneratedMessage {
   static UserInfo create() => UserInfo._();
   @$core.override
   UserInfo createEmptyInstance() => create();
-  static $pb.PbList<UserInfo> createRepeated() => $pb.PbList<UserInfo>();
   @$core.pragma('dart2js:noInline')
   static UserInfo getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserInfo>(create);
@@ -8652,7 +8507,6 @@ class VideoMask extends $pb.GeneratedMessage {
   static VideoMask create() => VideoMask._();
   @$core.override
   VideoMask createEmptyInstance() => create();
-  static $pb.PbList<VideoMask> createRepeated() => $pb.PbList<VideoMask>();
   @$core.pragma('dart2js:noInline')
   static VideoMask getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<VideoMask>(create);
@@ -8751,8 +8605,6 @@ class VideoSubtitle extends $pb.GeneratedMessage {
   static VideoSubtitle create() => VideoSubtitle._();
   @$core.override
   VideoSubtitle createEmptyInstance() => create();
-  static $pb.PbList<VideoSubtitle> createRepeated() =>
-      $pb.PbList<VideoSubtitle>();
   @$core.pragma('dart2js:noInline')
   static VideoSubtitle getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<VideoSubtitle>(create);
@@ -8835,8 +8687,6 @@ class ViewHerdDmElem extends $pb.GeneratedMessage {
   static ViewHerdDmElem create() => ViewHerdDmElem._();
   @$core.override
   ViewHerdDmElem createEmptyInstance() => create();
-  static $pb.PbList<ViewHerdDmElem> createRepeated() =>
-      $pb.PbList<ViewHerdDmElem>();
   @$core.pragma('dart2js:noInline')
   static ViewHerdDmElem getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ViewHerdDmElem>(create);

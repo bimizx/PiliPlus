@@ -2,15 +2,17 @@ import 'dart:convert';
 
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
-import 'package:PiliPlus/common/widgets/list_tile.dart';
+import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/grpc/bilibili/app/im/v1.pb.dart'
     show Session, SessionId, SessionPageType, SessionType, UnreadStyle;
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/pages/whisper_secondary/view.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -28,7 +30,7 @@ class WhisperSessionItem extends StatelessWidget {
   final Session item;
   final Function(bool isTop, SessionId id) onSetTop;
   final Function(bool isMuted, Int64 talkerUid) onSetMute;
-  final ValueChanged<int?> onRemove;
+  final ValueChanged<int> onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +46,16 @@ class WhisperSessionItem extends StatelessWidget {
         : null;
     final ThemeData theme = Theme.of(context);
 
-    void onLongPress() => showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
+    return ListTile(
+      safeArea: true,
+      tileColor: item.isPinned
+          ? theme.colorScheme.onInverseSurface.withValues(
+              alpha: theme.brightness.isDark ? 0.4 : 0.8,
+            )
+          : null,
+      onLongPress: () => showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
           clipBehavior: Clip.hardEdge,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
           content: DefaultTextStyle(
@@ -89,19 +97,39 @@ class WhisperSessionItem extends StatelessWidget {
               ],
             ),
           ),
-        );
-      },
-    );
-
-    return ListTile(
-      safeArea: true,
-      tileColor: item.isPinned
-          ? theme.colorScheme.onInverseSurface.withValues(
-              alpha: Get.isDarkMode ? 0.4 : 0.8,
+        ),
+      ),
+      onSecondaryTapUp: PlatformUtils.isDesktop
+          ? (details) => showMenu(
+              context: context,
+              position: PageUtils.menuPosition(details.globalPosition),
+              items: [
+                PopupMenuItem(
+                  height: 42,
+                  onTap: () => onSetTop(item.isPinned, item.id),
+                  child: Text(item.isPinned ? '移除置顶' : '置顶'),
+                ),
+                if (item.id.privateId.hasTalkerUid())
+                  PopupMenuItem(
+                    height: 42,
+                    onTap: () =>
+                        onSetMute(item.isMuted, item.id.privateId.talkerUid),
+                    child: Text('${item.isMuted ? '关闭' : '开启'}免打扰'),
+                  ),
+                if (item.id.privateId.hasTalkerUid())
+                  PopupMenuItem(
+                    height: 42,
+                    onTap: () => showConfirmDialog(
+                      context: context,
+                      title: '确定删除该对话？',
+                      onConfirm: () =>
+                          onRemove(item.id.privateId.talkerUid.toInt()),
+                    ),
+                    child: const Text('删除'),
+                  ),
+              ],
             )
           : null,
-      onLongPress: onLongPress,
-      onSecondaryTap: Utils.isMobile ? null : onLongPress,
       onTap: () {
         if (item.hasUnread()) {
           item.clearUnread();
@@ -161,9 +189,9 @@ class WhisperSessionItem extends StatelessWidget {
       leading: Builder(
         builder: (context) {
           final pendant = item.sessionInfo.avatar.fallbackLayers.layers
-              .getOrNull(1)
+              .elementAtOrNull(1)
               ?.resource;
-          final offcial = item
+          final official = item
               .sessionInfo
               .avatar
               .fallbackLayers
@@ -187,8 +215,8 @@ class WhisperSessionItem extends StatelessWidget {
                   ? pendant!.resImage.imageSrc.remote.url
                   : pendant?.resAnimation.webpSrc.remote.url,
               isVip: vipInfo?['status'] != null && vipInfo!['status'] > 0,
-              officialType: offcial?.hasLocalValue() == true
-                  ? switch (offcial!.localValue) {
+              officialType: official?.hasLocalValue() == true
+                  ? switch (official!.localValue) {
                       3 => 0,
                       4 => 1,
                       _ => null,
@@ -234,6 +262,7 @@ class WhisperSessionItem extends StatelessWidget {
                   Image.asset(
                     'assets/images/live/live.gif',
                     height: 15,
+                    cacheHeight: 15.cacheSize(context),
                     filterQuality: FilterQuality.low,
                   ),
               ],

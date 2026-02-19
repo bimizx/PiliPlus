@@ -1,5 +1,5 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/fav/fav_folder/list.dart';
 import 'package:PiliPlus/pages/fav/video/controller.dart';
@@ -49,8 +49,8 @@ class _FavVideoPageState extends State<FavVideoPage>
   Widget _buildBody(LoadingState<List<FavFolderInfo>?> loadingState) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (BuildContext context, int index) {
@@ -63,7 +63,7 @@ class _FavVideoPageState extends State<FavVideoPage>
                     heroTag: heroTag,
                     item: item,
                     onTap: () async {
-                      var res = await Get.toNamed(
+                      final res = await Get.toNamed(
                         '/favDetail',
                         arguments: item,
                         parameters: {
@@ -79,10 +79,10 @@ class _FavVideoPageState extends State<FavVideoPage>
                     },
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _favController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _favController.onReload,
       ),

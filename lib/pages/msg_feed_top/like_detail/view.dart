@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/skeleton/msg_feed_top.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/models_new/msg/msg_like_detail/card.dart';
@@ -66,7 +66,7 @@ class _LikeDetailPageState extends State<LikeDetailPage> {
         itemCount: 12,
         itemBuilder: (context, index) => const MsgFeedTopSkeleton(),
       ),
-      Success(:var response) => SliverMainAxisGroup(
+      Success(:final response) => SliverMainAxisGroup(
         slivers: [
           if (_controller.card != null) ...[
             _buildCard(_controller.card!),
@@ -89,7 +89,7 @@ class _LikeDetailPageState extends State<LikeDetailPage> {
           ),
         ],
       ),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

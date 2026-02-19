@@ -4,8 +4,10 @@ import 'dart:math';
 import 'package:PiliPlus/models_new/video/video_detail/page.dart';
 import 'package:PiliPlus/pages/video/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/controller.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 // TODO refa
@@ -18,6 +20,8 @@ class PagesPanel extends StatefulWidget {
     required this.heroTag,
     this.showEpisodes,
     required this.ugcIntroController,
+    this.onDownload,
+    this.cidSet,
   });
 
   final List<Part>? list;
@@ -27,6 +31,9 @@ class PagesPanel extends StatefulWidget {
   final String heroTag;
   final Function? showEpisodes;
   final UgcIntroController ugcIntroController;
+
+  final Set<int>? cidSet;
+  final bool Function(Part part)? onDownload;
 
   @override
   State<PagesPanel> createState() => _PagesPanelState();
@@ -105,7 +112,7 @@ class _PagesPanelState extends State<PagesPanel> {
                 const Text('视频选集 '),
                 Expanded(
                   child: Text(
-                    ' 正在播放：${pages[pageIndex].pagePart}',
+                    ' 正在播放：${pages[pageIndex].part}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
@@ -160,6 +167,12 @@ class _PagesPanelState extends State<PagesPanel> {
                   child: InkWell(
                     borderRadius: const BorderRadius.all(Radius.circular(6)),
                     onTap: () {
+                      if (widget.onDownload case final onDownload?) {
+                        if (onDownload(item) && mounted) {
+                          setState(() {});
+                        }
+                        return;
+                      }
                       if (widget.showEpisodes == null) {
                         Get.back();
                       }
@@ -187,13 +200,14 @@ class _PagesPanelState extends State<PagesPanel> {
                               'assets/images/live.png',
                               color: theme.colorScheme.primary,
                               height: 12,
+                              cacheHeight: 12.cacheSize(context),
                               semanticLabel: "正在播放：",
                             ),
                             const SizedBox(width: 6),
                           ],
                           Expanded(
                             child: Text(
-                              item.pagePart!,
+                              item.part!,
                               maxLines: 1,
                               style: TextStyle(
                                 fontSize: 13,
@@ -204,6 +218,14 @@ class _PagesPanelState extends State<PagesPanel> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (widget.cidSet?.contains(item.cid) ?? false)
+                            Icon(
+                              size: 13,
+                              color: theme.colorScheme.secondary.withValues(
+                                alpha: 0.8,
+                              ),
+                              FontAwesomeIcons.circleDown,
+                            ),
                         ],
                       ),
                     ),

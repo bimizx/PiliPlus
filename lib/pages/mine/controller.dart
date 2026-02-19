@@ -19,66 +19,65 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class MineController
-    extends CommonDataController<FavFolderData, FavFolderData> {
+class MineController extends CommonDataController<FavFolderData, FavFolderData>
+    with AccountMixin {
+  @override
   AccountService accountService = Get.find<AccountService>();
 
-  int? favFoldercount;
+  int? favFolderCount;
 
   // 用户信息 头像、昵称、lv
-  Rx<UserInfoData> userInfo = UserInfoData().obs;
+  final Rx<UserInfoData> userInfo = UserInfoData().obs;
   // 用户状态 动态、关注、粉丝
-  Rx<UserStat> userStat = UserStat().obs;
+  final Rx<UserStat> userStat = const UserStat().obs;
 
-  Rx<ThemeType> themeType = ThemeType.system.obs;
-  static RxBool anonymity =
-      (Accounts.account.isNotEmpty && !Accounts.heartbeat.isLogin).obs;
+  Rx<ThemeType> themeType = Pref.themeType.obs;
+
   ThemeType get nextThemeType =>
       ThemeType.values[(themeType.value.index + 1) % ThemeType.values.length];
 
-  late final list = <({IconData icon, String title, VoidCallback onTap})>[
-    (
-      icon: Icons.history,
-      title: '观看记录',
-      onTap: () {
-        if (isLogin) {
-          Get.toNamed('/history');
-        }
-      },
-    ),
-    (
-      icon: Icons.subscriptions_outlined,
-      title: '我的订阅',
-      onTap: () {
-        if (isLogin) {
-          Get.toNamed('/subscription');
-        }
-      },
-    ),
-    (
-      icon: Icons.watch_later_outlined,
-      title: '稍后再看',
-      onTap: () {
-        if (isLogin) {
-          Get.toNamed('/later');
-        }
-      },
-    ),
-    (
-      icon: Icons.create_outlined,
-      title: '创作中心',
-      onTap: () {
-        if (isLogin) {
-          Get.toNamed(
-            '/webview',
-            parameters: {
-              'url': 'https://member.bilibili.com/platform/home',
-            },
-          );
-        }
-      },
-    ),
-  ];
+  static RxBool anonymity =
+      (Accounts.account.isNotEmpty && !Accounts.heartbeat.isLogin).obs;
+
+  late final list =
+      <({IconData icon, double size, String title, VoidCallback onTap})>[
+        (
+          size: 23,
+          icon: MdiIcons.folderDownloadOutline,
+          title: '离线缓存',
+          onTap: () => Get.toNamed('/download'),
+        ),
+        (
+          size: 23,
+          icon: Icons.history,
+          title: '观看记录',
+          onTap: () {
+            if (isLogin) {
+              Get.toNamed('/history');
+            }
+          },
+        ),
+        (
+          size: 20,
+          icon: Icons.subscriptions_outlined,
+          title: '我的订阅',
+          onTap: () {
+            if (isLogin) {
+              Get.toNamed('/subscription');
+            }
+          },
+        ),
+        (
+          size: 22,
+          icon: Icons.watch_later_outlined,
+          title: '稍后再看',
+          onTap: () {
+            if (isLogin) {
+              Get.toNamed('/later');
+            }
+          },
+        ),
+      ];
 
   @override
   void onInit() {
@@ -100,18 +99,15 @@ class MineController
   }
 
   Future<void> queryUserInfo() async {
-    var res = await UserHttp.userInfo();
-    if (res.isSuccess) {
-      UserInfoData data = res.data;
-      if (data.isLogin == true) {
-        userInfo.value = data;
-        if (data != Pref.userInfoCache) {
-          GStorage.userInfo.put('userInfoCache', data);
+    final res = await UserHttp.userInfo();
+    if (res case Success(:final response)) {
+      if (response.isLogin == true) {
+        userInfo.value = response;
+        if (response != Pref.userInfoCache) {
+          GStorage.userInfo.put('userInfoCache', response);
         }
         accountService
-          ..mid = data.mid!
-          ..name.value = data.uname!
-          ..face.value = data.face!
+          ..face.value = response.face!
           ..isLogin.value = true;
       } else {
         LoginUtils.onLogoutMain();
@@ -129,15 +125,15 @@ class MineController
   }
 
   Future<void> queryUserStatOwner() async {
-    var res = await UserHttp.userStatOwner();
-    if (res['status']) {
-      userStat.value = res['data'];
+    final res = await UserHttp.userStatOwner();
+    if (res case Success(:final response)) {
+      userStat.value = response;
     }
   }
 
   @override
   bool customHandleResponse(bool isRefresh, Success<FavFolderData> response) {
-    favFoldercount = response.response.count;
+    favFolderCount = response.response.count;
     loadingState.value = response;
     return true;
   }
@@ -147,7 +143,7 @@ class MineController
     return FavHttp.userfavFolder(
       pn: 1,
       ps: 20,
-      mid: accountService.mid,
+      mid: Accounts.main.mid,
     );
   }
 
@@ -290,9 +286,20 @@ class MineController
   @override
   Future<void> onRefresh() {
     if (!accountService.isLogin.value) {
-      return Future.value();
+      return Future.syncValue(null);
     }
     queryUserInfo();
     return super.onRefresh();
+  }
+
+  @override
+  void onChangeAccount(bool isLogin) {
+    if (isLogin) {
+      onRefresh();
+    } else {
+      userInfo.value = UserInfoData();
+      userStat.value = const UserStat();
+      loadingState.value = LoadingState.loading();
+    }
   }
 }

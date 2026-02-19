@@ -43,8 +43,15 @@
 
 ## feat
 
+- [x] 编辑动态
+- [x] DLNA 投屏
+- [x] 离线缓存/播放
+- [x] 移动端支持点击弹幕悬停，点赞、复制、举报 by [@My-Responsitories](https://github.com/My-Responsitories)
+- [x] 播放音频
+- [x] 跳过番剧片头/片尾
+- [x] 安卓端 `loudnorm` 适配 by [@My-Responsitories](https://github.com/My-Responsitories)
 - [x] Win/Mac 支持极验、短信登录 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] 视频截取 GIF by [@My-Responsitories](https://github.com/My-Responsitories)
+- [x] 视频截取动图 by [@My-Responsitories](https://github.com/My-Responsitories)
 - [x] AI 原声翻译
 - [x] SuperChat
 - [x] 播放课堂视频
@@ -147,7 +154,7 @@
   - [x] 粉丝、关注用户、拉黑用户查看
   - [x] 用户主页查看
   - [x] 关注/取关用户
-  - [ ] 离线缓存
+  - [x] 离线缓存
   - [x] 稍后再看
   - [x] 观看记录
   - [x] 我的收藏
@@ -212,8 +219,8 @@
 
 ## 声明
 
-此项目（PiliPlus）是个人为了兴趣而开发, 仅用于学习和测试，请于下载后24小时内删除。
-所用API皆从官方网站收集, 不提供任何破解内容。
+此项目（PiliPlus）是个人为了兴趣而开发，仅用于学习和测试，请于下载后24小时内删除。
+所用API皆从官方网站收集，不提供任何破解内容。
 在此致敬原作者：[guozhigq/pilipala](https://github.com/guozhigq/pilipala)
 在此致敬上游作者：[orz12/PiliPalaX](https://github.com/orz12/PiliPalaX)
 本仓库做了更激进的修改，感谢原作者的开源精神。

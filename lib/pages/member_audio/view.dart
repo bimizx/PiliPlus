@@ -1,8 +1,8 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space_audio/item.dart';
 import 'package:PiliPlus/pages/member_audio/controller.dart';
@@ -27,10 +27,16 @@ class MemberAudio extends StatefulWidget {
 
 class _MemberAudioState extends State<MemberAudio>
     with AutomaticKeepAliveClientMixin {
-  late final _controller = Get.put(
-    MemberAudioController(widget.mid),
-    tag: widget.heroTag,
-  );
+  late final MemberAudioController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      MemberAudioController(widget.mid),
+      tag: widget.heroTag,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,8 +76,8 @@ class _MemberAudioState extends State<MemberAudio>
   ) {
     return switch (loadingState) {
       Loading() => linearLoading,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverMainAxisGroup(
                 slivers: [
                   SliverPersistentHeader(
@@ -125,12 +131,12 @@ class _MemberAudioState extends State<MemberAudio>
                         item: response[index],
                       );
                     },
-                    itemCount: response!.length,
+                    itemCount: response.length,
                   ),
                 ],
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

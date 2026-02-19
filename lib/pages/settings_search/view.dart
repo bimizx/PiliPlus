@@ -44,13 +44,8 @@ class _SettingsSearchPageState
       _list.value = _settings
           .where(
             (item) =>
-                (item.title ?? item.getTitle!()).toLowerCase().contains(
-                  value,
-                ) ||
-                (item.subtitle ?? item.getSubtitle?.call())
-                        ?.toLowerCase()
-                        .contains(value) ==
-                    true,
+                item.effectiveTitle.toLowerCase().contains(value) ||
+                item.effectiveSubtitle?.toLowerCase().contains(value) == true,
           )
           .toList();
     }
@@ -71,7 +66,7 @@ class _SettingsSearchPageState
             onPressed: () {
               if (_textEditingController.text.isNotEmpty) {
                 _textEditingController.clear();
-                _list.value = <SettingsModel>[];
+                _list.clear();
               } else {
                 Get.back();
               }
@@ -88,6 +83,7 @@ class _SettingsSearchPageState
           decoration: const InputDecoration(
             isDense: true,
             hintText: '搜索',
+            visualDensity: .standard,
             border: InputBorder.none,
           ),
         ),

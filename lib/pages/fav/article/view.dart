@@ -1,6 +1,6 @@
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/fav/fav_article/item.dart';
 import 'package:PiliPlus/pages/fav/article/controller.dart';
@@ -51,8 +51,8 @@ class _FavArticlePageState extends State<FavArticlePage>
   Widget _buildBody(LoadingState<List<FavArticleItemModel>?> loadingState) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -66,14 +66,14 @@ class _FavArticlePageState extends State<FavArticlePage>
                       context: context,
                       title: '确定取消收藏？',
                       onConfirm: () =>
-                          _favArticleController.onRemove(index, item.opusId),
+                          _favArticleController.onRemove(index, item.opusId!),
                     ),
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _favArticleController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _favArticleController.onReload,
       ),

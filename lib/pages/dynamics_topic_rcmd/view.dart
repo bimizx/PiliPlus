@@ -1,6 +1,6 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/view_sliver_safe_area.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/dynamic/dyn_topic_top/topic_item.dart';
@@ -41,10 +41,10 @@ class _DynTopicRcmdPageState extends State<DynTopicRcmdPage> {
   Widget _buildBody(LoadingState<List<TopicItem>?> loadingState) {
     return switch (loadingState) {
       Loading() => linearLoading,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverList.builder(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, index) {
                   return DynTopicItem(
                     item: response[index],
@@ -59,7 +59,7 @@ class _DynTopicRcmdPageState extends State<DynTopicRcmdPage> {
                 },
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

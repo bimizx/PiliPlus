@@ -1,5 +1,5 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space_article/item.dart';
 import 'package:PiliPlus/pages/member_article/controller.dart';
@@ -27,10 +27,16 @@ class _MemberArticleState extends State<MemberArticle>
   @override
   bool get wantKeepAlive => true;
 
-  late final _controller = Get.put(
-    MemberArticleCtr(mid: widget.mid),
-    tag: widget.heroTag,
-  );
+  late final MemberArticleCtr _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      MemberArticleCtr(mid: widget.mid),
+      tag: widget.heroTag,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +61,8 @@ class _MemberArticleState extends State<MemberArticle>
   Widget _buildBody(LoadingState<List<SpaceArticleItem>?> loadingState) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -67,10 +73,10 @@ class _MemberArticleState extends State<MemberArticle>
                     item: response[index],
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

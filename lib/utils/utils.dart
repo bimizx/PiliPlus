@@ -1,33 +1,77 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' show Random;
 
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
+import 'package:catcher_2/catcher_2.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-abstract class Utils {
-  static final Random random = Random();
+abstract final class Utils {
+  static final random = Random();
 
   static const channel = MethodChannel(Constants.appName);
 
-  @pragma("vm:platform-const")
-  static final bool isMobile = Platform.isAndroid || Platform.isIOS;
+  static const jsonEncoder = JsonEncoder.withIndent('    ');
 
-  @pragma("vm:platform-const")
-  static final bool isDesktop =
-      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  static String levelName(
+    Object level, {
+    bool isSeniorMember = false,
+  }) => 'assets/images/lv/lv${isSeniorMember ? '6_s' : level}.png';
+
+  static Color index2Color(int index, Color color) => switch (index) {
+    0 => const Color(0xFFfdad13),
+    1 => const Color(0xFF8aace1),
+    2 => const Color(0xFFdfa777),
+    _ => color,
+  };
+
+  static String themeUrl(bool isDark) =>
+      'native.theme=${isDark ? 2 : 1}&night=${isDark ? 1 : 0}';
+
+  static Future<void> saveBytes2File({
+    required String name,
+    required Uint8List bytes,
+    required List<String> allowedExtensions,
+    FileType type = FileType.custom,
+  }) async {
+    try {
+      final path = await FilePicker.platform.saveFile(
+        allowedExtensions: allowedExtensions,
+        type: type,
+        fileName: name,
+        bytes: PlatformUtils.isDesktop ? null : bytes,
+      );
+      if (path == null) {
+        SmartDialog.showToast("取消保存");
+        return;
+      }
+      if (PlatformUtils.isDesktop) {
+        await File(path).writeAsBytes(bytes);
+      }
+      SmartDialog.showToast("已保存");
+    } catch (e) {
+      SmartDialog.showToast("保存失败: $e");
+    }
+  }
+
+  static int? safeToInt(dynamic value) => switch (value) {
+    int e => e,
+    String e => int.tryParse(e),
+    num e => e.toInt(),
+    _ => null,
+  };
 
   static Future<bool> get isWiFi async {
     try {
-      return Utils.isMobile &&
+      return PlatformUtils.isMobile &&
           (await Connectivity().checkConnectivity()).contains(
             ConnectivityResult.wifi,
           );
@@ -40,13 +84,11 @@ abstract class Utils {
       Color(int.parse(color.replaceFirst('#', 'FF'), radix: 16));
 
   static int? _sdkInt;
-
   static Future<int> get sdkInt async {
     return _sdkInt ??= (await DeviceInfoPlugin().androidInfo).version.sdkInt;
   }
 
   static bool? _isIpad;
-
   static Future<bool> get isIpad async {
     if (!Platform.isIOS) return false;
     return _isIpad ??= (await DeviceInfoPlugin().iosInfo).model
@@ -54,22 +96,16 @@ abstract class Utils {
         .contains('ipad');
   }
 
-  static String? _tempDir;
-
-  static Future<String> get temporaryDirectory async {
-    return _tempDir ??= (await getTemporaryDirectory()).path;
-  }
-
   static Future<Rect?> get sharePositionOrigin async {
     if (await isIpad) {
       final size = Get.size;
-      return Rect.fromLTWH(0, 0, size.width, size.height / 2);
+      return Rect.fromLTRB(0, 0, size.width, size.height / 2);
     }
     return null;
   }
 
   static Future<void> shareText(String text) async {
-    if (Utils.isDesktop) {
+    if (PlatformUtils.isDesktop) {
       copyText(text);
       return;
     }
@@ -80,15 +116,6 @@ abstract class Utils {
     } catch (e) {
       SmartDialog.showToast(e.toString());
     }
-  }
-
-  static String buildShadersAbsolutePath(
-    String baseDirectory,
-    List<String> shaders,
-  ) {
-    return shaders
-        .map((shader) => path.join(baseDirectory, shader))
-        .join(Platform.isWindows ? ';' : ':');
   }
 
   static final numericRegex = RegExp(r'^[\d\.]+$');
@@ -118,15 +145,8 @@ abstract class Utils {
     return Clipboard.setData(ClipboardData(text: text));
   }
 
-  static String makeHeroTag(v) {
+  static String makeHeroTag(dynamic v) {
     return v.toString() + random.nextInt(9999).toString();
-  }
-
-  static int findClosestNumber(int target, List<int> numbers) {
-    List<int> filterNums = numbers.where((number) => number <= target).toList();
-    return filterNums.isNotEmpty
-        ? filterNums.reduce((a, b) => a > b ? a : b)
-        : numbers.reduce((a, b) => a > b ? b : a);
   }
 
   static List<int> generateRandomBytes(int minLength, int maxLength) {
@@ -143,8 +163,34 @@ abstract class Utils {
   }
 
   static String getFileName(String uri, {bool fileExt = true}) {
-    final i0 = uri.lastIndexOf('/') + 1;
-    final i1 = fileExt ? uri.length : uri.lastIndexOf('.');
-    return uri.substring(i0, i1);
+    int slash = -1;
+    int dot = -1;
+    int qMark = uri.length;
+
+    loop:
+    for (int index = uri.length - 1; index >= 0; index--) {
+      switch (uri.codeUnitAt(index)) {
+        case 0x2F: // `/`
+          slash = index;
+          break loop;
+        case 0x2E: // `.`
+          if (dot == -1) dot = index;
+          break;
+        case 0x3F: // `?`
+          qMark = index;
+          if (dot > qMark) dot = -1;
+          break;
+      }
+    }
+    RangeError.checkNotNegative(slash, '/');
+    return uri.substring(slash + 1, (fileExt || dot == -1) ? qMark : dot);
+  }
+
+  /// When calling this from a `catch` block consider annotating the method
+  /// containing the `catch` block with
+  /// `@pragma('vm:notify-debugger-on-exception')` to allow an attached debugger
+  /// to treat the exception as unhandled.
+  static void reportError(Object exception, [StackTrace? stack]) {
+    Catcher2.reportCheckedError(exception, stack);
   }
 }

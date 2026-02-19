@@ -1,4 +1,7 @@
+import 'dart:io' show File;
+
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/init.dart';
@@ -11,19 +14,19 @@ import 'package:PiliPlus/services/account_service.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/app_sign.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
-import 'package:PiliPlus/utils/image_utils.dart';
+import 'package:PiliPlus/utils/extension/file_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LengthLimitingTextInputFormatter;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -38,13 +41,14 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   LoadingState<AccountMyInfoData> _loadingState =
       LoadingState<AccountMyInfoData>.loading();
-  late final _textController = TextEditingController();
+  late final TextEditingController _textController;
   late final _imagePicker = ImagePicker();
   AccountService accountService = Get.find<AccountService>();
 
   @override
   void initState() {
     super.initState();
+    _textController = TextEditingController();
     _getInfo();
   }
 
@@ -87,9 +91,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   res.data['data'],
                 );
                 _loadingState = Success(data);
-                accountService
-                  ..name.value = data.name!
-                  ..face.value = data.face!;
+                accountService.face.value = data.face!;
                 try {
                   UserInfoData userInfo = Pref.userInfoCache!
                     ..uname = data.name
@@ -126,7 +128,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     return switch (loadingState) {
       Loading() => loadingWidget,
-      Success(:var response) => ListView(
+      Success(:final response) => ListView(
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewPaddingOf(context).bottom + 25,
         ),
@@ -137,12 +139,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             title: '头像',
             widget: Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
-              child: ClipOval(
-                child: CachedNetworkImage(
-                  width: 55,
-                  height: 55,
-                  imageUrl: ImageUtils.thumbnailUrl(response.face),
-                ),
+              child: NetworkImgLayer(
+                width: 55,
+                height: 55,
+                type: .avatar,
+                src: response.face,
               ),
             ),
             onTap: () => EasyThrottle.throttle(
@@ -238,7 +239,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           divider1,
         ],
       ),
-      Error(:var errMsg) => scrollErrorWidget(
+      Error(:final errMsg) => scrollErrorWidget(
         errMsg: errMsg,
         onReload: _getInfo,
       ),
@@ -347,12 +348,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     dynamic datum,
   }) async {
     final accessKey = Accounts.main.accessKey;
-    if (accessKey.isNullOrEmpty) {
+    if (accessKey == null || accessKey.isEmpty) {
       SmartDialog.showToast('请退出账号后重新登录');
       return;
     }
-    Map<String, String> data = {
-      'access_key': accessKey!,
+    final data = <String, String>{
+      'access_key': accessKey,
       'build': '2001100',
       'c_locale': 'zh_CN',
       'channel': 'master',
@@ -360,7 +361,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'platform': 'android',
       's_locale': 'zh_CN',
       'statistics': Constants.statistics,
-      'ts': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
       if (type == ProfileType.uname)
         'uname': _textController.text
       else if (type == ProfileType.sign)
@@ -386,7 +386,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
               data
                 ..name = _textController.text
                 ..coins = data.coins! - 6;
-              accountService.name.value = _textController.text;
               try {
                 UserInfoData userInfo = Pref.userInfoCache!
                   ..uname = _textController.text;
@@ -483,30 +482,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (pickedFile != null && mounted) {
         String? mimeType = lookupMimeType(
           pickedFile.path,
-        )?.split('/').getOrNull(1);
+        )?.split('/').elementAtOrNull(1);
         if (mimeType == 'gif') {
           SmartDialog.showToast('不能选GIF');
           return;
         }
-        String? imagePath;
-        if (Utils.isMobile) {
-          CroppedFile? croppedFile = await ImageCropper.platform.cropImage(
-            sourcePath: pickedFile.path,
+        String? imagePath = pickedFile.path;
+        if (PlatformUtils.isMobile) {
+          final croppedFile = await ImageCropper.platform.cropImage(
+            sourcePath: imagePath,
             uiSettings: [
               AndroidUiSettings(
                 toolbarTitle: '裁剪',
                 toolbarColor: theme.colorScheme.secondaryContainer,
                 toolbarWidgetColor: theme.colorScheme.onSecondaryContainer,
                 statusBarLight: theme.colorScheme.isLight,
-                aspectRatioPresets: [CropAspectRatioPresetCustom()],
+                aspectRatioPresets: const [CropAspectRatioPresetCustom()],
                 lockAspectRatio: true,
                 hideBottomControls: true,
                 cropStyle: CropStyle.circle,
-                initAspectRatio: CropAspectRatioPresetCustom(),
+                initAspectRatio: const CropAspectRatioPresetCustom(),
               ),
               IOSUiSettings(
                 title: '裁剪',
-                aspectRatioPresets: [CropAspectRatioPresetCustom()],
+                aspectRatioPresets: const [CropAspectRatioPresetCustom()],
                 cropStyle: CropStyle.circle,
                 aspectRatioLockEnabled: true,
                 resetAspectRatioEnabled: false,
@@ -514,11 +513,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ],
           );
-          if (croppedFile != null) {
-            imagePath = croppedFile.path;
-          }
-        } else {
-          imagePath = pickedFile.path;
+          File(imagePath).tryDel();
+          imagePath = croppedFile?.path;
         }
         if (imagePath != null) {
           Request()
@@ -536,9 +532,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
               .then((res) {
                 if (res.data['code'] == 0) {
                   SmartDialog.showToast('修改成功');
-                  Future.delayed(const Duration(milliseconds: 500), _getInfo);
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    if (mounted) {
+                      _getInfo();
+                    }
+                  });
                 } else {
                   SmartDialog.showToast(res.data['message']);
+                }
+                if (PlatformUtils.isMobile && imagePath != null) {
+                  File(imagePath).tryDel();
                 }
               });
         }
@@ -550,8 +553,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 }
 
 class CropAspectRatioPresetCustom implements CropAspectRatioPresetData {
+  const CropAspectRatioPresetCustom();
+
   @override
-  (int, int)? get data => (1, 1);
+  (int, int) get data => const (1, 1);
 
   @override
   String get name => '1x1 (customized)';

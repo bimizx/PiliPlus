@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
@@ -11,6 +11,7 @@ import 'package:PiliPlus/pages/dynamics/controller.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/dynamic_panel.dart';
 import 'package:PiliPlus/pages/dynamics_tab/controller.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/global_data.dart';
 import 'package:PiliPlus/utils/waterfall.dart';
 import 'package:flutter/material.dart';
@@ -33,13 +34,9 @@ class _DynamicsTabPageState
   StreamSubscription? _listener;
   late final MainController _mainController = Get.find<MainController>();
 
-  DynamicsController dynamicsController = Get.put(DynamicsController());
+  DynamicsController dynamicsController = Get.putOrFind(DynamicsController.new);
   @override
-  late DynamicsTabController controller = Get.put(
-    DynamicsTabController(dynamicsType: widget.dynamicsType)
-      ..mid = dynamicsController.mid.value,
-    tag: widget.dynamicsType.name,
-  );
+  late final DynamicsTabController controller;
 
   @override
   bool get wantKeepAlive => true;
@@ -49,23 +46,29 @@ class _DynamicsTabPageState
       _mainController.selectedIndex.value == 0;
 
   @override
-  bool onNotification(UserScrollNotification notification) {
+  bool onNotificationType1(UserScrollNotification notification) {
     if (checkPage) {
       return false;
     }
-    return super.onNotification(notification);
+    return super.onNotificationType1(notification);
   }
 
   @override
-  void listener() {
+  bool onNotificationType2(ScrollNotification notification) {
     if (checkPage) {
-      return;
+      return false;
     }
-    super.listener();
+    return super.onNotificationType2(notification);
   }
 
   @override
   void initState() {
+    controller = Get.putOrFind(
+      () =>
+          DynamicsTabController(dynamicsType: widget.dynamicsType)
+            ..mid = dynamicsController.mid.value,
+      tag: widget.dynamicsType.name,
+    );
     super.initState();
     if (widget.dynamicsType == DynamicsTabType.up) {
       _listener = dynamicsController.mid.listen((mid) {
@@ -113,8 +116,8 @@ class _DynamicsTabPageState
   Widget _buildBody(LoadingState<List<DynamicItemModel>?> loadingState) {
     return switch (loadingState) {
       Loading() => dynSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? GlobalData().dynamicsWaterfallFlow
                   ? SliverWaterfallFlow(
                       gridDelegate: dynGridDelegate,
@@ -133,7 +136,7 @@ class _DynamicsTabPageState
                             onUnfold: () => controller.onUnfold(item, index),
                           );
                         },
-                        childCount: response!.length,
+                        childCount: response.length,
                       ),
                     )
                   : SliverList.builder(
@@ -151,10 +154,10 @@ class _DynamicsTabPageState
                           onUnfold: () => controller.onUnfold(item, index),
                         );
                       },
-                      itemCount: response!.length,
+                      itemCount: response.length,
                     )
             : HttpError(onReload: controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: controller.onReload,
       ),

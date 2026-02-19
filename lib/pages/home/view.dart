@@ -1,15 +1,15 @@
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/custom_height_widget.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
-import 'package:PiliPlus/models/common/dynamic/dynamic_badge_mode.dart';
-import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,8 +21,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
-  final HomeController _homeController = Get.put(HomeController());
-  final MainController _mainController = Get.put(MainController());
+  final _homeController = Get.putOrFind(HomeController.new);
+  final _mainController = Get.find<MainController>();
 
   @override
   bool get wantKeepAlive => true;
@@ -31,41 +31,46 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final theme = Theme.of(context);
+    Widget tabBar;
+    if (_homeController.tabs.length > 1) {
+      tabBar = Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: SizedBox(
+          height: 42,
+          width: double.infinity,
+          child: TabBar(
+            controller: _homeController.tabController,
+            tabs: _homeController.tabs.map((e) => Tab(text: e.label)).toList(),
+            isScrollable: true,
+            dividerColor: Colors.transparent,
+            dividerHeight: 0,
+            splashBorderRadius: StyleString.mdRadius,
+            tabAlignment: TabAlignment.center,
+            onTap: (_) {
+              feedBack();
+              if (!_homeController.tabController.indexIsChanging) {
+                _homeController.animateToTop();
+              }
+            },
+          ),
+        ),
+      );
+      if (_homeController.hideTopBar &&
+          _mainController.barHideType == .instant) {
+        tabBar = Material(
+          color: theme.colorScheme.surface,
+          child: tabBar,
+        );
+      }
+    } else {
+      tabBar = const SizedBox(height: 6);
+    }
     return Column(
       children: [
-        if (!_homeController.useSideBar &&
+        if (!_mainController.useSideBar &&
             MediaQuery.sizeOf(context).isPortrait)
           customAppBar(theme),
-        if (_homeController.tabs.length > 1)
-          Material(
-            color: theme.colorScheme.surface,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: SizedBox(
-                height: 42,
-                width: double.infinity,
-                child: TabBar(
-                  controller: _homeController.tabController,
-                  tabs: [
-                    for (var i in _homeController.tabs) Tab(text: i.label),
-                  ],
-                  isScrollable: true,
-                  dividerColor: Colors.transparent,
-                  dividerHeight: 0,
-                  splashBorderRadius: StyleString.mdRadius,
-                  tabAlignment: TabAlignment.center,
-                  onTap: (_) {
-                    feedBack();
-                    if (!_homeController.tabController.indexIsChanging) {
-                      _homeController.animateToTop();
-                    }
-                  },
-                ),
-              ),
-            ),
-          )
-        else
-          const SizedBox(height: 6),
+        tabBar,
         Expanded(
           child: tabBarView(
             controller: _homeController.tabController,
@@ -76,123 +81,75 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget searchBarAndUser(ThemeData theme) {
-    return Row(
+  Widget customAppBar(ThemeData theme) {
+    const padding = EdgeInsets.fromLTRB(14, 6, 14, 0);
+    final child = Row(
       children: [
         searchBar(theme),
         const SizedBox(width: 4),
-        Obx(
-          () => _homeController.accountService.isLogin.value
-              ? msgBadge(_mainController)
-              : const SizedBox.shrink(),
-        ),
+        msgBadge(_mainController),
         const SizedBox(width: 8),
-        Semantics(
-          label: "我的",
-          child: Obx(
-            () => _homeController.accountService.isLogin.value
-                ? Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      NetworkImgLayer(
-                        type: ImageType.avatar,
-                        width: 34,
-                        height: 34,
-                        src: _homeController.accountService.face.value,
-                      ),
-                      Positioned.fill(
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: InkWell(
-                            onTap: _mainController.toMinePage,
-                            splashColor: theme.colorScheme.primaryContainer
-                                .withValues(alpha: 0.3),
-                            customBorder: const CircleBorder(),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: -6,
-                        bottom: -6,
-                        child: Obx(
-                          () => MineController.anonymity.value
-                              ? IgnorePointer(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          theme.colorScheme.secondaryContainer,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      size: 16,
-                                      MdiIcons.incognito,
-                                      color: theme
-                                          .colorScheme
-                                          .onSecondaryContainer,
-                                    ),
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ),
-                    ],
-                  )
-                : defaultUser(
-                    theme: theme,
-                    onPressed: _mainController.toMinePage,
-                  ),
-          ),
-        ),
+        userAvatar(theme: theme, mainController: _mainController),
       ],
     );
-  }
-
-  Widget customAppBar(ThemeData theme) {
-    if (!_homeController.hideSearchBar) {
-      return Container(
-        height: 52,
-        padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-        child: searchBarAndUser(theme),
-      );
-    }
-    return StreamBuilder(
-      stream: _homeController.searchBarStream?.stream.distinct(),
-      initialData: true,
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        return AnimatedOpacity(
-          opacity: snapshot.data ? 1 : 0,
-          duration: const Duration(milliseconds: 300),
-          child: AnimatedContainer(
-            curve: Curves.easeInOutCubicEmphasized,
-            duration: const Duration(milliseconds: 500),
-            height: snapshot.data ? 52 : 0,
-            padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-            child: searchBarAndUser(theme),
-          ),
+    if (_homeController.hideTopBar) {
+      if (_mainController.barOffset case final barOffset?) {
+        return Obx(
+          () {
+            final offset = barOffset.value;
+            return CustomHeightWidget(
+              offset: Offset(0, -offset),
+              height: StyleString.topBarHeight - offset,
+              child: Padding(
+                padding: padding,
+                child: child,
+              ),
+            );
+          },
         );
-      },
+      }
+      if (_homeController.showTopBar case final showTopBar?) {
+        return Obx(() {
+          final showSearchBar = showTopBar.value;
+          return AnimatedOpacity(
+            opacity: showSearchBar ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: AnimatedContainer(
+              curve: Curves.easeInOutCubicEmphasized,
+              duration: const Duration(milliseconds: 500),
+              height: showSearchBar ? StyleString.topBarHeight : 0,
+              padding: padding,
+              child: child,
+            ),
+          );
+        });
+      }
+    }
+    return Container(
+      height: StyleString.topBarHeight,
+      padding: padding,
+      child: child,
     );
   }
 
   Widget searchBar(ThemeData theme) {
+    const borderRadius = BorderRadius.all(Radius.circular(25));
     return Expanded(
       child: SizedBox(
         height: 44,
         child: Material(
-          borderRadius: const BorderRadius.all(Radius.circular(25)),
+          borderRadius: borderRadius,
           color: theme.colorScheme.onSecondaryContainer.withValues(alpha: 0.05),
           child: InkWell(
-            borderRadius: const BorderRadius.all(Radius.circular(25)),
+            borderRadius: borderRadius,
             splashColor: theme.colorScheme.primaryContainer.withValues(
               alpha: 0.3,
             ),
             onTap: () => Get.toNamed(
               '/search',
-              parameters: {
-                if (_homeController.enableSearchWord)
-                  'hintText': _homeController.defaultSearch.value,
-              },
+              parameters: _homeController.enableSearchWord
+                  ? {'hintText': _homeController.defaultSearch.value}
+                  : null,
             ),
             child: Row(
               children: [
@@ -223,60 +180,109 @@ class _HomePageState extends State<HomePage>
   }
 }
 
-Widget defaultUser({
+Widget userAvatar({
   required ThemeData theme,
-  required VoidCallback onPressed,
+  required MainController mainController,
 }) {
-  return SizedBox(
-    width: 38,
-    height: 38,
-    child: IconButton(
-      tooltip: '默认用户头像',
-      style: ButtonStyle(
-        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-        backgroundColor: WidgetStatePropertyAll(
-          theme.colorScheme.onInverseSurface,
-        ),
-      ),
-      onPressed: onPressed,
-      icon: Icon(
-        Icons.person_rounded,
-        size: 22,
-        color: theme.colorScheme.primary,
-      ),
+  return Semantics(
+    label: "我的",
+    child: Obx(
+      () {
+        if (mainController.accountService.isLogin.value) {
+          return Stack(
+            clipBehavior: .none,
+            children: [
+              NetworkImgLayer(
+                type: .avatar,
+                width: 34,
+                height: 34,
+                src: mainController.accountService.face.value,
+              ),
+              Positioned.fill(
+                child: Material(
+                  type: .transparency,
+                  child: InkWell(
+                    onTap: mainController.toMinePage,
+                    splashColor: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
+                    customBorder: const CircleBorder(),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: -4,
+                bottom: -4,
+                child: Obx(
+                  () => MineController.anonymity.value
+                      ? IgnorePointer(
+                          child: Container(
+                            padding: const .all(2),
+                            decoration: BoxDecoration(
+                              shape: .circle,
+                              color: theme.colorScheme.secondaryContainer,
+                            ),
+                            child: Icon(
+                              size: 14,
+                              MdiIcons.incognito,
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          );
+        }
+        return SizedBox(
+          width: 38,
+          height: 38,
+          child: IconButton(
+            tooltip: '点击登录',
+            style: IconButton.styleFrom(
+              padding: .zero,
+              backgroundColor: theme.colorScheme.onInverseSurface,
+            ),
+            onPressed: mainController.toMinePage,
+            icon: Icon(
+              Icons.person_rounded,
+              size: 22,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        );
+      },
     ),
   );
 }
 
 Widget msgBadge(MainController mainController) {
-  void toWhisper() {
-    mainController.msgUnReadCount.value = '';
-    mainController.lastCheckUnreadAt = DateTime.now().millisecondsSinceEpoch;
-    Get.toNamed('/whisper');
-  }
-
-  final msgUnReadCount = mainController.msgUnReadCount.value;
-  return GestureDetector(
-    onTap: toWhisper,
-    child: Badge(
-      isLabelVisible:
-          mainController.msgBadgeMode != DynamicBadgeMode.hidden &&
-          msgUnReadCount.isNotEmpty,
-      alignment: mainController.msgBadgeMode == DynamicBadgeMode.number
-          ? const Alignment(0, -0.5)
-          : const Alignment(0.5, -0.5),
-      label:
-          mainController.msgBadgeMode == DynamicBadgeMode.number &&
-              msgUnReadCount.isNotEmpty
-          ? Text(msgUnReadCount)
-          : null,
-      child: IconButton(
-        tooltip: '消息',
-        onPressed: toWhisper,
-        icon: const Icon(
-          Icons.notifications_none,
-        ),
-      ),
-    ),
+  return Obx(
+    () {
+      if (mainController.accountService.isLogin.value) {
+        final count = mainController.msgUnReadCount.value;
+        final isNumBadge = mainController.msgBadgeMode == .number;
+        return IconButton(
+          tooltip: '消息',
+          onPressed: () {
+            mainController
+              ..msgUnReadCount.value = ''
+              ..lastCheckUnreadAt = DateTime.now().millisecondsSinceEpoch;
+            Get.toNamed('/whisper');
+          },
+          icon: Badge(
+            isLabelVisible:
+                mainController.msgBadgeMode != .hidden && count.isNotEmpty,
+            alignment: isNumBadge
+                ? const Alignment(0.0, -0.85)
+                : const Alignment(1.0, -0.85),
+            label: isNumBadge && count.isNotEmpty ? Text(count) : null,
+            child: const Icon(Icons.notifications_none),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    },
   );
 }

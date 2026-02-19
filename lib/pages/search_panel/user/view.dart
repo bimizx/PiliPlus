@@ -5,7 +5,8 @@ import 'package:PiliPlus/pages/search_panel/user/controller.dart';
 import 'package:PiliPlus/pages/search_panel/user/widgets/item.dart';
 import 'package:PiliPlus/pages/search_panel/view.dart';
 import 'package:PiliPlus/utils/grid.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'
+    hide SliverGridDelegateWithMaxCrossAxisExtent;
 import 'package:get/get.dart';
 
 class SearchUserPanel extends CommonSearchPanel {
@@ -28,14 +29,20 @@ class _SearchUserPanelState
           SearchUserItemModel
         > {
   @override
-  late final SearchUserController controller = Get.put(
-    SearchUserController(
-      keyword: widget.keyword,
-      searchType: widget.searchType,
-      tag: widget.tag,
-    ),
-    tag: widget.searchType.name + widget.tag,
-  );
+  late final SearchUserController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(
+      SearchUserController(
+        keyword: widget.keyword,
+        searchType: widget.searchType,
+        tag: widget.tag,
+      ),
+      tag: widget.searchType.name + widget.tag,
+    );
+  }
 
   @override
   Widget buildHeader(ThemeData theme) {
@@ -111,7 +118,7 @@ class _SearchUserPanelState
   }
 
   @override
-  Widget get builLoading => SliverGrid.builder(
+  Widget get buildLoading => SliverGrid.builder(
     gridDelegate: gridDelegate,
     itemBuilder: (context, index) => const MsgFeedTopSkeleton(),
     itemCount: 10,

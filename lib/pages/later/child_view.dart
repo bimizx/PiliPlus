@@ -1,5 +1,5 @@
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/later_view_type.dart';
 import 'package:PiliPlus/models/common/video/source_type.dart';
@@ -7,7 +7,7 @@ import 'package:PiliPlus/models_new/later/list.dart';
 import 'package:PiliPlus/pages/later/base_controller.dart';
 import 'package:PiliPlus/pages/later/controller.dart';
 import 'package:PiliPlus/pages/later/widgets/video_card_h_later.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:flutter/material.dart';
@@ -27,11 +27,17 @@ class LaterViewChildPage extends StatefulWidget {
 
 class _LaterViewChildPageState extends State<LaterViewChildPage>
     with AutomaticKeepAliveClientMixin, GridMixin {
-  late final LaterController _laterController = Get.put(
-    LaterController(widget.laterViewType),
-    tag: widget.laterViewType.type.toString(),
-  );
+  late final LaterController _laterController;
   late final _baseCtr = Get.putOrFind(LaterBaseController.new);
+
+  @override
+  void initState() {
+    super.initState();
+    _laterController = Get.put(
+      LaterController(widget.laterViewType),
+      tag: widget.laterViewType.type.toString(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,15 +65,15 @@ class _LaterViewChildPageState extends State<LaterViewChildPage>
   Widget _buildBody(LoadingState<List<LaterItemModel>?> loadingState) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
                     _laterController.onLoadMore();
                   }
-                  var videoItem = response[index];
+                  final videoItem = response[index];
                   return VideoCardHLater(
                     index: index,
                     videoItem: videoItem,
@@ -84,10 +90,10 @@ class _LaterViewChildPageState extends State<LaterViewChildPage>
                                 'sourceType': SourceType.watchLater,
                                 'count': _laterController
                                     .baseCtr
-                                    .counts[LaterViewType.all],
+                                    .counts[LaterViewType.all.index],
                                 'favTitle': '稍后再看',
-                                'mediaId': _laterController.accountService.mid,
-                                'desc': false,
+                                'mediaId': _laterController.mid,
+                                'desc': _laterController.asc.value,
                                 'isContinuePlaying': index != 0,
                               }
                             : null,
@@ -95,10 +101,10 @@ class _LaterViewChildPageState extends State<LaterViewChildPage>
                     },
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _laterController.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _laterController.onReload,
       ),

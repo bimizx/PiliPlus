@@ -200,36 +200,7 @@ class LiveMessageStream {
       //   ..d('$logTag ===> TCP连接建立')
       //   ..d('$logTag ===> 发送认证包');
       _socketSubscription = _channel?.stream.listen(
-        (data) {
-          final header = PackageHeaderRes.fromBytesData(data);
-          if (header != null) {
-            List<int> decompressedData = [];
-            //心跳包回复不用处理
-            if (header.operationCode == 3) return;
-            if (header.operationCode == 8) {
-              _heartBeat();
-            }
-            try {
-              switch (header.protocolVer) {
-                case 0:
-                case 1:
-                  _processingData(data);
-                  return;
-                case 2:
-                  decompressedData = ZLibDecoder().convert(data.sublist(0x10));
-                  break;
-                case 3:
-                  decompressedData = const BrotliDecoder().convert(
-                    data.sublist(0x10),
-                  );
-                //debugPrint('Body: ${utf8.decode()}');
-              }
-              _processingData(decompressedData);
-            } catch (e) {
-              if (kDebugMode) logger.i(e);
-            }
-          }
-        },
+        onData,
         onDone: close,
         onError: (_) => close(),
       );
@@ -239,25 +210,25 @@ class LiveMessageStream {
     }
   }
 
-  void _processingData(List<int> data) {
+  @pragma('vm:notify-debugger-on-exception')
+  void _processingData(List<int> value) {
     try {
-      final subHeader = PackageHeaderRes.fromBytesData(
-        Uint8List.fromList(data),
-      );
+      final Uint8List data = value is Uint8List
+          ? value
+          : Uint8List.fromList(value);
+      final subHeader = PackageHeaderRes.fromBytesData(data);
       if (subHeader != null) {
         final msgBody = utf8.decode(
           data.sublist(subHeader.headerSize, subHeader.totalSize),
         );
-        for (var f in _eventListeners) {
+        for (final f in _eventListeners) {
           f(jsonDecode(msgBody));
         }
         if (subHeader.totalSize < data.length) {
           _processingData(data.sublist(subHeader.totalSize));
         }
       }
-    } catch (e) {
-      if (kDebugMode) logger.i('ParseHeader错误: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _heartBeat() async {
@@ -294,6 +265,38 @@ class LiveMessageStream {
 
   void addEventListener(void Function(dynamic) func) {
     _eventListeners.add(func);
+  }
+
+  @pragma('vm:notify-debugger-on-exception')
+  void onData(dynamic data) {
+    final header = PackageHeaderRes.fromBytesData(data as Uint8List);
+    if (header != null) {
+      List<int> decompressedData = const [];
+      //心跳包回复不用处理
+      if (header.operationCode == 3) return;
+      if (header.operationCode == 8) {
+        _heartBeat();
+      }
+      try {
+        switch (header.protocolVer) {
+          case 0:
+          case 1:
+            _processingData(data);
+            return;
+          case 2:
+            decompressedData = ZLibDecoder().convert(
+              Uint8List.sublistView(data, 0x10),
+            );
+            break;
+          case 3:
+            decompressedData = const BrotliDecoder().convert(
+              Uint8List.sublistView(data, 0x10),
+            );
+          //debugPrint('Body: ${utf8.decode()}');
+        }
+        _processingData(decompressedData);
+      } catch (_) {}
+    }
   }
 
   void close() {

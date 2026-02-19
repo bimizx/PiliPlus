@@ -1,6 +1,6 @@
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space_archive/item.dart';
 import 'package:PiliPlus/pages/member_pgc/controller.dart';
@@ -28,13 +28,19 @@ class _MemberBangumiState extends State<MemberBangumi>
   @override
   bool get wantKeepAlive => true;
 
-  late final _controller = Get.put(
-    MemberBangumiCtr(
-      heroTag: widget.heroTag,
-      mid: widget.mid,
-    ),
-    tag: widget.heroTag,
-  );
+  late final MemberBangumiCtr _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      MemberBangumiCtr(
+        heroTag: widget.heroTag,
+        mid: widget.mid,
+      ),
+      tag: widget.heroTag,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +77,8 @@ class _MemberBangumiState extends State<MemberBangumi>
   Widget _buildBody(LoadingState<List<SpaceArchiveItem>?> loadingState) {
     return switch (loadingState) {
       Loading() => const SliverToBoxAdapter(),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -83,10 +89,10 @@ class _MemberBangumiState extends State<MemberBangumi>
                     item: response[index],
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

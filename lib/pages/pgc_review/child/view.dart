@@ -2,9 +2,10 @@ import 'package:PiliPlus/common/skeleton/video_reply.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/flutter/selectable_text/selectable_text.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/models/common/pgc_review_type.dart';
@@ -12,10 +13,12 @@ import 'package:PiliPlus/models_new/pgc/pgc_review/list.dart';
 import 'package:PiliPlus/pages/pgc_review/child/controller.dart';
 import 'package:PiliPlus/pages/pgc_review/post/view.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide SelectableText;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
@@ -37,12 +40,19 @@ class PgcReviewChildPage extends StatefulWidget {
 
 class _PgcReviewChildPageState extends State<PgcReviewChildPage>
     with AutomaticKeepAliveClientMixin {
-  late final _tag = '${widget.mediaId}${widget.type.name}';
-  late final _controller = Get.put(
-    PgcReviewController(type: widget.type, mediaId: widget.mediaId),
-    tag: _tag,
-  );
+  late final String _tag;
+  late final PgcReviewController _controller;
   late final isLongReview = widget.type == PgcReviewType.long;
+
+  @override
+  void initState() {
+    super.initState();
+    _tag = '${widget.mediaId}${widget.type.name}';
+    _controller = Get.put(
+      PgcReviewController(type: widget.type, mediaId: widget.mediaId),
+      tag: _tag,
+    );
+  }
 
   @override
   void dispose() {
@@ -88,8 +98,8 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
         itemBuilder: (_, _) => const VideoReplySkeleton(),
         itemCount: 8,
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverList.separated(
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
@@ -97,11 +107,11 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
                   }
                   return _itemWidget(theme, index, response[index]);
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
                 separatorBuilder: (context, index) => divider,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),
@@ -153,7 +163,7 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
                   showConfirmDialog(
                     context: context,
                     title: '删除短评，同时删除评分？',
-                    onConfirm: () => _controller.onDel(index, item.reviewId),
+                    onConfirm: () => _controller.onDel(index, item.reviewId!),
                   );
                 },
               ),
@@ -192,7 +202,9 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
               )
             : null,
         onLongPress: !isLongReview ? showMore : null,
-        onSecondaryTap: !isLongReview && !Utils.isMobile ? showMore : null,
+        onSecondaryTap: !isLongReview && !PlatformUtils.isMobile
+            ? showMore
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -233,8 +245,9 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
                               ),
                             ),
                             Image.asset(
-                              'assets/images/lv/lv${item.author!.level}.png',
+                              Utils.levelName(item.author!.level!),
                               height: 11,
+                              cacheHeight: 11.cacheSize(context),
                             ),
                           ],
                         ),

@@ -1,10 +1,10 @@
 import 'package:PiliPlus/common/skeleton/msg_feed_top.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
+import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
-import 'package:PiliPlus/common/widgets/list_tile.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/pair.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/grpc/bilibili/app/im/v1.pbenum.dart'
     show IMSettingType;
 import 'package:PiliPlus/http/loading_state.dart';
@@ -14,7 +14,7 @@ import 'package:PiliPlus/pages/msg_feed_top/like_me/controller.dart';
 import 'package:PiliPlus/pages/whisper_settings/view.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:get/get.dart';
 
@@ -26,7 +26,7 @@ class LikeMePage extends StatefulWidget {
 }
 
 class _LikeMePageState extends State<LikeMePage> {
-  late final LikeMeController _likeMeController = Get.put(LikeMeController());
+  final LikeMeController _likeMeController = Get.put(LikeMeController());
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +82,7 @@ class _LikeMePageState extends State<LikeMePage> {
         itemCount: 12,
         itemBuilder: (context, index) => const MsgFeedTopSkeleton(),
       ),
-      Success(:var response) => Builder(
+      Success(:final response) => Builder(
         builder: (context) {
           Pair<List<MsgLikeItem>, List<MsgLikeItem>> pair = response;
           List<MsgLikeItem> latest = pair.first;
@@ -134,7 +134,7 @@ class _LikeMePageState extends State<LikeMePage> {
           return HttpError(onReload: _likeMeController.onReload);
         },
       ),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _likeMeController.onReload,
       ),
@@ -164,6 +164,38 @@ class _LikeMePageState extends State<LikeMePage> {
     MsgLikeItem item,
     ValueChanged<int?> onRemove,
   ) {
+    final firstUser = item.users!.first;
+    Widget avatar;
+    if (item.users!.length == 1) {
+      avatar = NetworkImgLayer(
+        width: 45,
+        height: 45,
+        type: ImageType.avatar,
+        src: firstUser.avatar,
+      );
+    } else {
+      avatar = SizedBox(
+        width: 45,
+        height: 45,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            for (var j = 0; j < item.users!.length && j < 4; j++) ...[
+              Positioned(
+                left: 15.0 * (j % 2),
+                top: 15.0 * (j ~/ 2),
+                child: NetworkImgLayer(
+                  width: 30,
+                  height: 30,
+                  type: ImageType.avatar,
+                  src: item.users![j].avatar,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
     void onLongPress() => showDialog(
       context: context,
       builder: (context) {
@@ -239,43 +271,13 @@ class _LikeMePageState extends State<LikeMePage> {
         PiliScheme.routePushFromUrl(nativeUri);
       },
       onLongPress: onLongPress,
-      onSecondaryTap: Utils.isMobile ? null : onLongPress,
-      leading: Column(
-        children: [
-          const Spacer(),
-          SizedBox(
-            width: 50,
-            height: 50,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                for (
-                  var j = 0;
-                  j < item.users!.length && j < 4;
-                  j++
-                ) ...<Widget>[
-                  Positioned(
-                    left: 15 * (j % 2).toDouble(),
-                    top: 15 * (j ~/ 2).toDouble(),
-                    child: NetworkImgLayer(
-                      width: item.users!.length > 1 ? 30 : 45,
-                      height: item.users!.length > 1 ? 30 : 45,
-                      type: ImageType.avatar,
-                      src: item.users![j].avatar,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const Spacer(),
-        ],
-      ),
+      onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
+      leading: avatar,
       title: Text.rich(
         TextSpan(
           children: [
             TextSpan(
-              text: "${item.users![0].nickname}",
+              text: firstUser.nickname,
               style: theme.textTheme.titleSmall!.copyWith(
                 height: 1.5,
                 color: theme.colorScheme.primary,
@@ -290,7 +292,7 @@ class _LikeMePageState extends State<LikeMePage> {
                 ),
               ),
             TextSpan(
-              text: " 赞了我的${item.item?.business}",
+              text: ' 赞了我的${item.item?.business}',
               style: theme.textTheme.titleSmall!.copyWith(
                 height: 1.5,
                 color: theme.colorScheme.onSurfaceVariant,
@@ -334,6 +336,9 @@ class _LikeMePageState extends State<LikeMePage> {
               width: 45,
               height: 45,
               src: item.item!.image,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(8),
+              ),
             ),
           if (item.noticeState == 1) ...[
             if (item.item?.image?.isNotEmpty == true) const SizedBox(width: 4),

@@ -1,9 +1,10 @@
 // 内容
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
+import 'package:PiliPlus/common/widgets/flutter/text/text.dart' as custom_text;
 import 'package:PiliPlus/common/widgets/image/custom_grid_view.dart';
-import 'package:PiliPlus/common/widgets/text/text.dart' as custom_text;
 import 'package:PiliPlus/models/dynamics/result.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/rich_node_panel.dart';
+import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -77,6 +78,8 @@ Widget content(
                   style: isSave
                       ? const TextStyle(fontSize: 15)
                       : const TextStyle(fontSize: 16),
+                  contextMenuBuilder: (_, state) =>
+                      _contextMenuBuilder(state, moduleDynamic),
                 )
               : custom_text.Text.rich(
                   style: floor == 1
@@ -84,11 +87,13 @@ Widget content(
                       : const TextStyle(fontSize: 14),
                   richNodes,
                   maxLines: isSave ? null : 6,
+                  onShowMore: () => PageUtils.pushDynDetail(item, isPush: true),
+                  primary: theme.colorScheme.primary,
                 ),
-        if (pics?.isNotEmpty == true)
+        if (pics != null && pics.isNotEmpty)
           CustomGridView(
             maxWidth: maxWidth,
-            picArr: pics!
+            picArr: pics
                 .map(
                   (item) => ImageModel(
                     width: item.width,
@@ -101,6 +106,40 @@ Widget content(
             fullScreen: true,
           ),
       ],
+    ),
+  );
+}
+
+Widget _contextMenuBuilder(
+  EditableTextState state,
+  ModuleDynamicModel? moduleDynamic,
+) {
+  return AdaptiveTextSelectionToolbar.buttonItems(
+    buttonItems: state.contextMenuButtonItems
+      ..add(
+        ContextMenuButtonItem(
+          label: '文本',
+          onPressed: () => _onCopyText(moduleDynamic),
+        ),
+      ),
+    anchors: state.contextMenuAnchors,
+  );
+}
+
+void _onCopyText(ModuleDynamicModel? moduleDynamic) {
+  final text =
+      moduleDynamic?.desc?.text ?? moduleDynamic?.major?.opus?.summary?.text;
+  if (text == null || text.isEmpty) return;
+  showDialog(
+    context: Get.context!,
+    builder: (context) => Dialog(
+      child: Padding(
+        padding: const .symmetric(horizontal: 20, vertical: 16),
+        child: SelectableText(
+          text,
+          style: const TextStyle(fontSize: 15, height: 1.7),
+        ),
+      ),
     ),
   );
 }

@@ -22,10 +22,16 @@ class ReplySearchPage extends StatefulWidget {
 }
 
 class _ReplySearchPageState extends State<ReplySearchPage> {
-  late final _controller = Get.put(
-    ReplySearchController(widget.type, widget.oid),
-    tag: Utils.generateRandomString(8),
-  );
+  late final ReplySearchController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      ReplySearchController(widget.type, widget.oid),
+      tag: Utils.generateRandomString(8),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +54,7 @@ class _ReplySearchPageState extends State<ReplySearchPage> {
           textAlignVertical: TextAlignVertical.center,
           decoration: InputDecoration(
             hintText: '搜索',
+            visualDensity: .standard,
             border: InputBorder.none,
             suffixIcon: IconButton(
               tooltip: '清空',
@@ -63,9 +70,9 @@ class _ReplySearchPageState extends State<ReplySearchPage> {
           children: [
             TabBar(
               controller: _controller.tabController,
-              tabs: [
-                const Tab(text: '视频'),
-                const Tab(text: '专栏'),
+              tabs: const [
+                Tab(text: '视频'),
+                Tab(text: '专栏'),
               ],
               onTap: (index) {
                 if (!_controller.tabController.indexIsChanging) {

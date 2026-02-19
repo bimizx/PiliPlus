@@ -4,6 +4,7 @@ import 'package:PiliPlus/common/widgets/image/image_save.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/models_new/sub/sub/list.dart';
 import 'package:PiliPlus/pages/subscription_detail/view.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -55,7 +56,7 @@ class SubItem extends StatelessWidget {
           }
         },
         onLongPress: onLongPress,
-        onSecondaryTap: Utils.isMobile ? null : onLongPress,
+        onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           child: Row(
@@ -108,21 +109,27 @@ class SubItem extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Column(
-            spacing: 4,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                item.title!,
-                textAlign: TextAlign.start,
-                style: const TextStyle(
-                  letterSpacing: 0.3,
+              Expanded(
+                child: Text(
+                  item.title!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
               Text(
                 'UP主: ${item.upper!.name!}',
                 textAlign: TextAlign.start,
                 style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
+              const SizedBox(height: 4),
               Text(
                 '${item.mediaCount}个视频',
                 textAlign: TextAlign.start,
@@ -133,17 +140,15 @@ class SubItem extends StatelessWidget {
           Positioned(
             bottom: 0,
             right: 0,
-            child: SizedBox(
-              height: 35,
-              width: 35,
-              child: IconButton(
-                onPressed: cancelSub,
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.outline,
-                  padding: EdgeInsets.zero,
-                ),
-                icon: const Icon(Icons.delete_outline, size: 18),
+            height: 35,
+            width: 35,
+            child: IconButton(
+              onPressed: cancelSub,
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.outline,
+                padding: EdgeInsets.zero,
               ),
+              icon: const Icon(Icons.delete_outline, size: 18),
             ),
           ),
         ],

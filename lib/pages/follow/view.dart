@@ -7,6 +7,7 @@ import 'package:PiliPlus/models/member/tags.dart';
 import 'package:PiliPlus/pages/follow/child/child_controller.dart';
 import 'package:PiliPlus/pages/follow/child/child_view.dart';
 import 'package:PiliPlus/pages/follow/controller.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LengthLimitingTextInputFormatter;
@@ -17,23 +18,41 @@ class FollowPage extends StatefulWidget {
 
   @override
   State<FollowPage> createState() => _FollowPageState();
+
+  static void toFollowPage({dynamic mid, String? name}) {
+    if (mid == null) return;
+    Get.toNamed(
+      '/follow',
+      arguments: {
+        'mid': Utils.safeToInt(mid),
+        'name': name,
+      },
+    );
+  }
 }
 
 class _FollowPageState extends State<FollowPage> {
   final _tag = Utils.generateRandomString(8);
-  late final FollowController _followController = Get.put(
-    FollowController(),
-    tag: _tag,
-  );
+  late final FollowController _followController;
+
+  @override
+  void initState() {
+    super.initState();
+    _followController = Get.put(FollowController(), tag: _tag);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text(
-          _followController.isOwner ? '我的关注' : '${_followController.name}的关注',
-        ),
+        title: _followController.isOwner
+            ? const Text('我的关注')
+            : Obx(() {
+                final name = _followController.name.value;
+                if (name != null) return Text('$name的关注');
+                return const SizedBox.shrink();
+              }),
         actions: _followController.isOwner
             ? [
                 IconButton(
@@ -110,7 +129,7 @@ class _FollowPageState extends State<FollowPage> {
                         Feedback.forLongPress(context);
                         _onHandleTag(index, item);
                       },
-                      onSecondaryTap: Utils.isMobile
+                      onSecondaryTap: PlatformUtils.isMobile
                           ? null
                           : () => _onHandleTag(index, item),
                       child: Tab(
@@ -160,64 +179,62 @@ class _FollowPageState extends State<FollowPage> {
   void _onHandleTag(int index, MemberTagItemModel item) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          clipBehavior: Clip.hardEdge,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                onTap: () {
-                  Get.back();
-                  String tagName = item.name!;
-                  showConfirmDialog(
-                    context: context,
-                    title: '编辑分组名称',
-                    content: TextFormField(
-                      autofocus: true,
-                      initialValue: tagName,
-                      onChanged: (value) => tagName = value,
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(16),
-                      ],
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
+      builder: (context) => AlertDialog(
+        clipBehavior: Clip.hardEdge,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              onTap: () {
+                Get.back();
+                String tagName = item.name!;
+                showConfirmDialog(
+                  context: context,
+                  title: '编辑分组名称',
+                  content: TextFormField(
+                    autofocus: true,
+                    initialValue: tagName,
+                    onChanged: (value) => tagName = value,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(16),
+                    ],
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
                     ),
-                    onConfirm: () {
-                      if (tagName.isNotEmpty) {
-                        _followController.onUpdateTag(item, tagName);
-                      }
-                    },
-                  );
-                },
-                dense: true,
-                title: const Text(
-                  '修改名称',
-                  style: TextStyle(fontSize: 14),
-                ),
+                  ),
+                  onConfirm: () {
+                    if (tagName.isNotEmpty) {
+                      _followController.onUpdateTag(item, tagName);
+                    }
+                  },
+                );
+              },
+              dense: true,
+              title: const Text(
+                '修改名称',
+                style: TextStyle(fontSize: 14),
               ),
-              ListTile(
-                onTap: () {
-                  Get.back();
-                  showConfirmDialog(
-                    context: context,
-                    title: '删除分组',
-                    content: '删除后，该分组下的用户依旧保留？',
-                    onConfirm: () => _followController.onDelTag(item.tagid),
-                  );
-                },
-                dense: true,
-                title: const Text(
-                  '删除分组',
-                  style: TextStyle(fontSize: 14),
-                ),
+            ),
+            ListTile(
+              onTap: () {
+                Get.back();
+                showConfirmDialog(
+                  context: context,
+                  title: '删除分组',
+                  content: '删除后，该分组下的用户依旧保留？',
+                  onConfirm: () => _followController.onDelTag(item.tagid!),
+                );
+              },
+              dense: true,
+              title: const Text(
+                '删除分组',
+                style: TextStyle(fontSize: 14),
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
